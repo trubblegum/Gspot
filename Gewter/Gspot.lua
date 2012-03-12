@@ -164,6 +164,7 @@ local Gspot = {
 	add = function(this, element, display)
 		local id = this:newid()
 		element.id = id
+		element.label = element.label or ' '
 		element.display = true
 		element.orig = this.newpos(element.pos)
 		table.insert(this.elements, element)
@@ -188,7 +189,7 @@ local Gspot = {
 	end,
 
 	rem = function(this, id, l)
-		if this:element(this:element(id).parent) then
+		if this:element(id).parent and this:element(this:element(id).parent) then
 			this:element(this:element(id).parent).child = nil
 		end
 		i = 1
@@ -269,7 +270,7 @@ local Gspot = {
 						element:rdrag(this.mousein)
 					end
 				end
-				if element.id == this.focus and element.type == 'input' then
+				if element.type == 'input' and element.id == this.focus then
 					if element.cursorlife < 1 then
 						element.cursorlife = 0
 					else
@@ -319,8 +320,10 @@ local Gspot = {
 		end
 		if this.mousein then
 			local element = this:element(this.mousein)
-			local parentid = this:getparent(element.id).id
-			this:stackchildren(parentid)
+			if element.type ~= 'hidden' then
+				local parentid = this:getparent(element.id).id
+				this:stackchildren(parentid)
+			end
 			if element.drag then
 				this.drag = element.id
 				element.offset = {x = x - element.pos.x, y = y - element.pos.y}
@@ -612,12 +615,14 @@ local Gspot = {
 	
 	-- image
 	image = function(this, label, pos, img, parent)
-		if type(img) == 'string' then
-			img = assert(love.graphics.newImage(img))
-		end
 		local element = {type = 'image', label = label, pos = this.newpos(pos), img = img, parent = parent, Gspot = this}
-		element.pos.w = img:getWidth()
-		element.pos.h = img:getHeight()
+		if img then
+			if type(img) == 'string' then
+				element.img = assert(love.graphics.newImage(img))
+			end
+			element.pos.w = element.img:getWidth()
+			element.pos.h = element.img:getHeight()
+		end
 		return this:add(element)
 	end,
 	
@@ -650,8 +655,11 @@ local Gspot = {
 		element.click = function(this)
 			this.Gspot:setfocus(this.id)
 		end
+		element.done = function(this)
+			this.Gspot:unfocus()
+		end
 		element.keypress = function(this, key, code)
-						-- delete
+			-- delete
 			if key == 'backspace' then
 				this.value = this.value:sub(1, this.cursor - 1)..this.value:sub(this.cursor + 1)
 				this.cursor = math.max(0, this.cursor - 1)

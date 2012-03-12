@@ -1,13 +1,13 @@
 -- elements defined :
 -- gui:group(label, pos, optional parent) -- a box with a label, great for arranging gui elements in
 -- gui:text(text, pos, optional parent) -- a text object, alighned left and wrapped to pos.w
--- gui:image(label, pos, img, optional parent) -- an image, with label as a caption, centered below. sets the dimensions of the element to match the image
+-- gui:image(label, pos, img, optional parent) -- an image, with label as a caption, centered below. if img is not nil, sets the dimensions of the element to match the image else nothing will be rendered
 -- gui:button(label, pos, optional parent) -- a box with a label, great for clicking on
 -- gui:imgbutton(label, pos, img, optional parent) -- a button with an image, which will be centered on the button. a transparent image will show the gui's hilighting underneath. does not alter element dimensions
 -- gui:option(label, pos, value, optional parent) -- a button which remembers if it was clicked
 -- gui:scroll(label, pos, values, optional parent) -- a vertical scrollbar
 -- gui:scrollgroup(label, pos, optional parent) -- a vertical scrolling window, with its own scrollbar
--- gui:hidden(label, pos, optional parent) -- an invisible element, which is never drawn, but its tooltip is. good for overlaying on game objects. it only has a label so it doesn't feel left out
+-- gui:hidden(label, pos, optional parent) -- an invisible element, which is never drawn, but its tooltip is, and is not brought to the front. it only has a label so it doesn't feel left out.
 
 -- element format :
 -- element = {id = gui.maxid(), label = string or nil, pos = gui.pos(position), display = true}

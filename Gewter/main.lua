@@ -21,8 +21,7 @@ love.load = function()
 	love.graphics.setFont(love.graphics.newFont(192))
 	love.graphics.setColor(24, 16, 8, 255)
 	
-	bg = gui:hidden('', {0, 0, love.graphics.getWidth(), love.graphics.getWidth()})
-	bg = gui:element(bg)
+	bg = gui:element(gui:hidden('', {0, 0, love.graphics.getWidth(), love.graphics.getWidth()}))
 	bg.click = function(this)
 		bullet = gui:image('', {player.pos.x + (player.img:getWidth() / 2), player.pos.y + (player.img:getHeight() / 2), 0, 0}, 'bullet.png')
 		bullet = gui:element(bullet)
@@ -30,16 +29,19 @@ love.load = function()
 		bullet.update = function(this, dt)
 			this.pos.x = this.pos.x + (this.v.x * (256 * dt))
 			this.pos.y = this.pos.y + (this.v.y * (256 * dt))
-			if this.Gspot.withinrect(this.pos, target.pos) then
-				target:hit()
-				this.Gspot:rem(this.id)
+			for i, target in pairs(this.Gspot.elements) do
+				if target.type == 'group' and this.Gspot.withinrect(this.pos, target.pos) then
+					if target.hit then
+						target:hit()
+					end
+					this.Gspot:rem(this.id)
+					break
+				end
 			end
 		end
-		this.Gspot:stackchildren(target.id)
 	end
 	
-	player = gui:image('', {0, 0, 0, 0}, 'player.png')
-	player = gui:element(player)
+	player = gui:element(gui:image('', {0, 0, 0, 0}, 'player.png'))
 	player.v = {x = 0, y = 0}
 	player.jump = false
 	player.update = function(this, dt)
@@ -56,11 +58,15 @@ love.load = function()
 			--
 		else
 			if this.v.y > 0 then
-				for x = this.pos.x, this.pos.x + this.pos.w, 16 do
-					if gui.withinrect({x = x, y = this.pos.y + this.pos.h}, target.pos) and (this.pos.y + this.pos.h) - this.v.y < target.pos.y then
-						this.pos.y = target.pos.y - this.pos.h
-						this.v.y = 0
-						this.jump = true
+				for i, target in pairs(gui.elements) do
+					if target.type == 'group' then
+						for x = this.pos.x, this.pos.x + this.pos.w, 16 do
+							if gui.withinrect({x = x, y = this.pos.y + this.pos.h}, target.pos) and (this.pos.y + this.pos.h) - this.v.y < target.pos.y then
+								this.pos.y = target.pos.y - this.pos.h
+								this.v.y = 0
+								this.jump = true
+							end
+						end
 					end
 				end
 			end
@@ -104,8 +110,7 @@ love.load = function()
 		return group.id
 	end
 	
-	target = gui:button(' ', {love.graphics.getWidth() / 2, love.graphics.getHeight() / 2, 32, 32})
-	target = gui:element(target)
+	target = gui:element(gui:group(nil, {love.graphics.getWidth() / 2, love.graphics.getHeight() / 2, 32, 32}))
 	target.click = function(this)
 		this.Gspot:speech('Hey! No cheating!', {target.pos.x + (target.pos.w / 2), target.pos.y, 1, 1})
 	end
@@ -119,6 +124,11 @@ love.load = function()
 	help = gui:element(help)
 	gui:text('A and D to move, W to jump, Mouse to fire', {0, gui.std, 128, 0}, help.id) -- some contents
 	gui:hide(help.id)
+	
+	for i = 1, 3 do
+		local element = gui:element(gui:group(nil, {gui.std, gui.std, 256, 32}))
+		element.drag = true
+	end
 end
 
 love.update = function(dt)
