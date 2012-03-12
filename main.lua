@@ -176,7 +176,7 @@ love.load = function()
 	gui:element(inputid).chat = function(this) -- define a custom behaviour, or use the gui's done() behaviour, which is triggered when you hit enter
 		print('I say '..this.value)
 		this.value = '' -- clear input
-		this.Gspot:unfocus() -- every element has a reference to the gui instance which created it, handy for clearing focus in this case
+		this.Gspot:unfocus() -- every element has a reference to the gui instance which created it, and since we are overriding imput.done we need it to clear focus
 	end
 	-- you probably don't want to override input's default keypress()
 	-- if you want to override input's default click(), be sure to include the following default focus behaviour, or the gui won't pass it any keyboard events

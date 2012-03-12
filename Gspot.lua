@@ -164,6 +164,7 @@ local Gspot = {
 	add = function(this, element, display)
 		local id = this:newid()
 		element.id = id
+		element.label = element.label or ' '
 		element.display = true
 		element.orig = this.newpos(element.pos)
 		table.insert(this.elements, element)
@@ -650,8 +651,11 @@ local Gspot = {
 		element.click = function(this)
 			this.Gspot:setfocus(this.id)
 		end
+		element.done = function(this)
+			this.Gspot:unfocus()
+		end
 		element.keypress = function(this, key, code)
-						-- delete
+			-- delete
 			if key == 'backspace' then
 				this.value = this.value:sub(1, this.cursor - 1)..this.value:sub(this.cursor + 1)
 				this.cursor = math.max(0, this.cursor - 1)
