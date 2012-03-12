@@ -5,3 +5,25 @@ Gspöt - a stately GUI lib for LÖVE
 - conf.lua : LÖVE config
 - img.png : example image
 - /Gewter : a super awesome platform shooter, made using Gspot as a game engine.
+
+Aims :
+- ease of use
+- flexibility
+- visual consistency
+- GUI instances
+
+What it does :
+- range of one-line GUI elements, with default functionality included
+- custom callbacks for 16 events
+- element grouping
+- element or group level display toggling
+- consistent GUI styling using Gspot.std, Gspot.color, Gspot.font
+- element level font, colour, image
+- element level update and keyrepeat
+
+What it doesn't do :
+- custom draw functions
+- per-element custom background colours
+- prepare a hearty home-cooked meal
+
+Documentation : to follow

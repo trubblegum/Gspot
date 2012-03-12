@@ -99,8 +99,8 @@ love.load = function()
 	element.leave = function(this) print("I'm Out!") end
 	
 	-- hidden element
-	id = gui:hidden(nil, {128, 128, 128, 128}) -- create a hidden element, to see it at work
-	gui:element(id).tip = "can't see me, but I still respond"
+	element = gui:element(gui:hidden(nil, {128, 128, 128, 128})) -- another way to get a reference. this time creating a hidden element, to see it at work
+	element.tip = "can't see me, but I still respond"
 	
 	-- group will carry its children with it, positioned relatively
 	groupid = gui:group('group', {gui.std, gui.std * 3, 128, gui.std}) -- create a group(label, position, optional parent), like a simple window
