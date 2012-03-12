@@ -1,1 +1,7 @@
 Gspöt - a stately GUI lib for LÖVE
+
+- Gspot.lua : the lib's only required file
+- main.lua : commented examples and quick ref
+- conf.lua : LÖVE config
+- img.png : example image
+- /Gewter : a super awesome platform shooter, made using Gspot as a game engine.
