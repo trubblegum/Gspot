@@ -122,7 +122,7 @@ love.load = function()
 	id = gui:text('Hit F1 for help', {love.graphics.getWidth() - 128, gui.std, 128, gui.std})
 	help = gui:group('Controls', {love.graphics.getWidth() - 128, gui.std, 128, 64})
 	help = gui:element(help)
-	gui:text('A and D to move, W to jump, Mouse to fire', {0, gui.std, 128, 0}, help.id) -- some contents
+	gui:text('A and D to move, W to jump, Mouse to fire', {0, gui.std, 128, 0}, help.id)
 	gui:hide(help.id)
 	
 	for i = 1, 3 do
@@ -143,7 +143,7 @@ end
 
 love.keypressed = function(key, code)
 	gui:keypress(key, code)
-	if key == 'f1' then -- toggle show-hider
+	if key == 'f1' then
 		if help.display then
 			gui:hide(help.id)
 		else

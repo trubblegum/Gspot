@@ -4,7 +4,7 @@ Gspöt - a stately GUI lib for LÖVE
 - main.lua : commented examples and quick ref
 - conf.lua : LÖVE config
 - img.png : example image
-- /Gewter : a super awesome platform shooter, made using Gspot as a game engine.
+- /Gewter : a super awesome platform shooter, made using Gspot as a game engine. Note that this was quite hastily thrown together, so all kinds of bad practice can be learned here.
 
 Aims :
 - ease of use
@@ -45,8 +45,8 @@ Where position = {x = number, y = number, w = number, h = number}
 + optionally :
 
 - parent = number - must be an element id, positions the element relative to its parent
-- display = false - don't draw or register events
-- tip = string - a tooltip to display near the top left when the mouse is inside the element
+- display = false - don't draw or register events. setting this will not propagate display state to children. use Gspot:hide(id) and Gspot:show(id)
+- tip = string - a tooltip to display near the top left corner of the element when the mouse is inside the element
 - font = love fontData - sets a font other than the default to print element.label with
 - color = love RGBA. sets a color other than the default to print element.label with
 - keyrepeat = number - sets the repeat interval for this element's key events (defaults to 200 for Gspot.input)
