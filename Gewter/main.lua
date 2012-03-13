@@ -2,7 +2,7 @@ Gspot = require('Gspot')
 gui = Gspot:new()
 
 bgtext = 'ÖBEY'
-ground = love.graphics.getHeight() - 256
+ground = love.graphics.getHeight() - 128
 bg = nil
 player = nil
 target = nil
@@ -126,7 +126,7 @@ love.load = function()
 	gui:hide(help.id)
 	
 	for i = 1, 3 do
-		local element = gui:element(gui:group(nil, {gui.std, gui.std, 256, 32}))
+		local element = gui:element(gui:group("Drag'n Jump", {gui.std, gui.std, 256, 32}))
 		element.drag = true
 	end
 end
