@@ -30,7 +30,7 @@ love.load = function()
 			this.pos.x = this.pos.x + (this.v.x * (256 * dt))
 			this.pos.y = this.pos.y + (this.v.y * (256 * dt))
 			for i, target in pairs(this.Gspot.elements) do
-				if target.type == 'group' and this.Gspot.withinrect(this.pos, target.pos) then
+				if target.type == 'group' and target.display and this.Gspot.withinrect(this.pos, target.pos) then
 					if target.hit then
 						target:hit()
 					end
@@ -59,7 +59,7 @@ love.load = function()
 		else
 			if this.v.y > 0 then
 				for i, target in pairs(gui.elements) do
-					if target.type == 'group' then
+					if target.type == 'group' and target.display then
 						for x = this.pos.x, this.pos.x + this.pos.w, 16 do
 							if gui.withinrect({x = x, y = this.pos.y + this.pos.h}, target.pos) and (this.pos.y + this.pos.h) - this.v.y < target.pos.y then
 								this.pos.y = target.pos.y - this.pos.h
@@ -136,7 +136,7 @@ love.update = function(dt)
 end
 
 love.draw = function()
-	love.graphics.print(bgtext, 0, 240, math.pi / 4, 1, 1)
+	love.graphics.print(bgtext, 0, 120, math.pi / 4, 1, 1)
 	
 	gui:draw()
 end
