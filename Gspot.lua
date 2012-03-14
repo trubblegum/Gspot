@@ -52,6 +52,16 @@ local Gspot = {
 		return pos
 	end,
 	
+	newimage = function(this)
+		if type(this.img) == 'string' and love.filesystem.exists(this.img) then
+			this.img = assert(love.graphics.newImage(this.img))
+		end
+		if this.type == 'image' and type(img) == 'Image' then
+			this.pos.w = this.img:getWidth()
+			this.pos.h = this.img:getHeight()
+		end
+	end,
+	
 	element = function(this, id)
 		for i, element in ipairs(this.elements) do
 			if element.id == id then
@@ -94,7 +104,7 @@ local Gspot = {
 	end,
 	
 	getdist = function(pos, target)
-		return math.sqrt((pos.x-target.x)*(pos.x-target.x)+(pos.y-target.y)*(pos.y-target.y))
+		return math.sqrt((pos.x-target.x) * (pos.x-target.x) + (pos.y-target.y) * (pos.y-target.y))
 	end,
 	
 	withinradius = function(pos, circ)
@@ -169,18 +179,16 @@ local Gspot = {
 		element.orig = this.newpos(element.pos)
 		table.insert(this.elements, element)
 		if this:element(element.parent) and this:element(element.parent).type == 'scrollgroup' then
-			if element.type == 'scroll' then
-				this:element(element.parent).child = id
-			else
+			if element.type ~= 'scroll' then
 				local scrollgroup = this:element(element.parent)
 				local scroll = this:element(scrollgroup.child)
 				local maxh = 0
 				local items = this:getchildren(scrollgroup.id)
-					for i, item in pairs(items) do
-						if item.pos.y + item.pos.h > maxh then
-							maxh = item.pos.y + item.pos.h
-						end
+				for i, item in pairs(items) do
+					if item.pos.y + item.pos.h > maxh then
+						maxh = item.pos.y + item.pos.h
 					end
+				end
 				scrollgroup.maxh = maxh
 				scroll.values.max = math.max(maxh - scrollgroup.pos.h, 0)
 			end
@@ -617,11 +625,7 @@ local Gspot = {
 	image = function(this, label, pos, img, parent)
 		local element = {type = 'image', label = label, pos = this.newpos(pos), img = img, parent = parent, Gspot = this}
 		if img then
-			if type(img) == 'string' then
-				element.img = assert(love.graphics.newImage(img))
-			end
-			element.pos.w = element.img:getWidth()
-			element.pos.h = element.img:getHeight()
+			this.newimage(element)
 		end
 		return this:add(element)
 	end,
@@ -632,19 +636,19 @@ local Gspot = {
 		return this:add(element)
 	end,
 	imgbutton = function(this, label, pos, img, parent)
-		if type(img) == 'string' then
-			img = assert(love.graphics.newImage(img))
-		end
 		local element = {type = 'button', label = label, pos = this.newpos(pos), img = img, parent = parent, Gspot = this}
+		if img then
+			this.newimage(element)
+		end
 		return this:add(element)
 	end,
 	option = function(this, label, pos, value, parent)
-		local id = this:button(label, pos, parent)
-		this:element(id).value = value
-		this:element(id).click = function(this)
+		local element = this:element(this:button(label, pos, parent))
+		element.value = value
+		element.click = function(this)
 			this.Gspot:element(this.parent).value = this.value
 		end
-		return id
+		return element.id
 	end,
 	
 	-- input
@@ -720,11 +724,9 @@ local Gspot = {
 	scrollgroup = function(this, label, pos, parent)
 		local element = {type = 'scrollgroup', label = label, pos = this.newpos(pos), parent = parent, maxh = 0, Gspot = this}
 		element.canvas = love.graphics.newFramebuffer(element.pos.w, element.pos.h)
-		local id = this:add(element)
-		
-		local scrollid = this:scroll(nil, {x = element.pos.w, y = 0, w = this.std, h = element.pos.h}, {min = 0, max = 0, current = 0, step = this.std}, id)
-		
-		return id
+		local element = this:element(this:add(element))
+		element.child = this:scroll(nil, {x = element.pos.w, y = 0, w = this.std, h = element.pos.h}, {min = 0, max = 0, current = 0, step = this.std}, element.id)
+		return element.id
 	end,
 	
 	hidden = function(this, label, pos, parent)
