@@ -340,8 +340,8 @@ local Gspot = {
 				this.drag = element.id
 				element.offset = {x = x - element.pos.x, y = y - element.pos.y}
 			end
-			if button == 'l'
-				if mousedt < 250 and element.dblclick then
+			if button == 'l' then
+				if this.mousedt < 250 and element.dblclick then
 					element:dblclick()
 				elseif element.click then
 					element:click()
