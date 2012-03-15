@@ -21,6 +21,7 @@ local Gspot = {
 			mem = {},
 			elements = {},
 			mousein = nil,
+			mousedt = 0,
 			focus = nil,
 			drag = nil,
 			ofont = nil,
@@ -232,6 +233,7 @@ local Gspot = {
 	
 	-- interaction
 	update = function(this, dt)
+		this.mousedt = this.mousedt + dt
 		local mouse = {}
 		mouse.x, mouse.y = love.mouse.getPosition()
 		this.mouseover = nil
@@ -321,7 +323,7 @@ local Gspot = {
 		this.mousein = mousein
 	end,
 	
-	mousepress = function(this, x, y, button)
+	mousepress = function(this, x, y, button, dt)
 		this:unfocus()
 		for i, element in pairs(this.elements) do
 			if element.temp and element.id ~= this.mousein then
@@ -338,9 +340,14 @@ local Gspot = {
 				this.drag = element.id
 				element.offset = {x = x - element.pos.x, y = y - element.pos.y}
 			end
-			if button == 'l' and element.click then
-				element:click()
-			elseif button == 'r' and element.rclick then
+			if button == 'l'
+				if mousedt < 250 and element.dblclick then
+					element:dblclick()
+				elseif element.click then
+					element:click()
+				end
+			end
+			if button == 'r' and element.rclick then
 				element:rclick()
 			elseif button == 'wu' and element.wheelup then
 				element:wheelup()
@@ -351,6 +358,7 @@ local Gspot = {
 				this:rem(element.id)
 			end
 		end
+		this.mousedt = 0
 	end,
 
 	mouserelease = function(this, x, y, button)

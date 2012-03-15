@@ -47,6 +47,7 @@
 -- enter = function(this) -- register a mouseenter behaviour
 -- leave = function(this) -- register a mouseleave behaviour
 -- click = function(this) -- register a click behaviour
+-- dblclick = function(this) -- registers a behaviour which will be called if the mouse is clicked within .25s of the last click. only the first click will trigger the click behaviour
 -- rclick = function(this) -- register a right-click behaviour
 -- drag = true -- registers for the defualt drag behaviour, which follows the mouse, or scrolls the scrollbar if element is a scrollbar
 -- drag = function(this) -- registers for the defualt drag behaviour, followed by an additional custom drag behaviour

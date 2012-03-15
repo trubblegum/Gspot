@@ -21,6 +21,7 @@ local Gspot = {
 			mem = {},
 			elements = {},
 			mousein = nil,
+			mousedt = 0,
 			focus = nil,
 			drag = nil,
 			ofont = nil,
@@ -40,9 +41,11 @@ local Gspot = {
 	newpos = function(t)
 		local pos = {}
 		if t.x and t.y then
-			for i, v in pairs(t) do
-				pos[i] = v
-			end
+			pos.x = t.x or 16
+			pos.y = t.y or 16
+			pos.w = t.w or 16
+			pos.h = t.h or 16
+			pos.r = t.r or nil
 		else
 			pos.x, pos.y, pos.w, pos.h = t[1], t[2], t[3], t[4]
 			if t[5] then -- not sure if radius will have w and h, so this might change
@@ -50,6 +53,16 @@ local Gspot = {
 			end
 		end
 		return pos
+	end,
+	
+	newimage = function(this)
+		if type(this.img) == 'string' and love.filesystem.exists(this.img) then
+			this.img = assert(love.graphics.newImage(this.img))
+		end
+		if this.type == 'image' and type(img) == 'Image' then
+			this.pos.w = this.img:getWidth()
+			this.pos.h = this.img:getHeight()
+		end
 	end,
 	
 	element = function(this, id)
@@ -94,7 +107,7 @@ local Gspot = {
 	end,
 	
 	getdist = function(pos, target)
-		return math.sqrt((pos.x-target.x)*(pos.x-target.x)+(pos.y-target.y)*(pos.y-target.y))
+		return math.sqrt((pos.x-target.x) * (pos.x-target.x) + (pos.y-target.y) * (pos.y-target.y))
 	end,
 	
 	withinradius = function(pos, circ)
@@ -169,18 +182,16 @@ local Gspot = {
 		element.orig = this.newpos(element.pos)
 		table.insert(this.elements, element)
 		if this:element(element.parent) and this:element(element.parent).type == 'scrollgroup' then
-			if element.type == 'scroll' then
-				this:element(element.parent).child = id
-			else
+			if element.type ~= 'scroll' then
 				local scrollgroup = this:element(element.parent)
 				local scroll = this:element(scrollgroup.child)
 				local maxh = 0
 				local items = this:getchildren(scrollgroup.id)
-					for i, item in pairs(items) do
-						if item.pos.y + item.pos.h > maxh then
-							maxh = item.pos.y + item.pos.h
-						end
+				for i, item in pairs(items) do
+					if item.pos.y + item.pos.h > maxh then
+						maxh = item.pos.y + item.pos.h
 					end
+				end
 				scrollgroup.maxh = maxh
 				scroll.values.max = math.max(maxh - scrollgroup.pos.h, 0)
 			end
@@ -222,6 +233,7 @@ local Gspot = {
 	
 	-- interaction
 	update = function(this, dt)
+		this.mousedt = this.mousedt + dt
 		local mouse = {}
 		mouse.x, mouse.y = love.mouse.getPosition()
 		this.mouseover = nil
@@ -311,7 +323,7 @@ local Gspot = {
 		this.mousein = mousein
 	end,
 	
-	mousepress = function(this, x, y, button)
+	mousepress = function(this, x, y, button, dt)
 		this:unfocus()
 		for i, element in pairs(this.elements) do
 			if element.temp and element.id ~= this.mousein then
@@ -328,9 +340,14 @@ local Gspot = {
 				this.drag = element.id
 				element.offset = {x = x - element.pos.x, y = y - element.pos.y}
 			end
-			if button == 'l' and element.click then
-				element:click()
-			elseif button == 'r' and element.rclick then
+			if button == 'l'
+				if mousedt < 250 and element.dblclick then
+					element:dblclick()
+				elseif element.click then
+					element:click()
+				end
+			end
+			if button == 'r' and element.rclick then
 				element:rclick()
 			elseif button == 'wu' and element.wheelup then
 				element:wheelup()
@@ -341,6 +358,7 @@ local Gspot = {
 				this:rem(element.id)
 			end
 		end
+		this.mousedt = 0
 	end,
 
 	mouserelease = function(this, x, y, button)
@@ -433,11 +451,7 @@ local Gspot = {
 				end
 				-- draw group
 				if element.type == 'group' then
-					if element.id == this.mousein then
-						love.graphics.setColor(this.color.default)
-					else
-						love.graphics.setColor(this.color.bg)
-					end
+					love.graphics.setColor(this.color.bg)
 					this.rect(pos)
 					if element.label then
 						if element.color then
@@ -514,11 +528,7 @@ local Gspot = {
 					end
 				-- draw scrollgroup
 				elseif element.type == 'scrollgroup' then
-					if element.id == this.mousein then
-						love.graphics.setColor(this.color.default)
-					else
-						love.graphics.setColor(this.color.bg)
-					end
+					love.graphics.setColor(this.color.bg)
 					this.rect(pos)
 					if element.label then
 						if element.color then
@@ -617,11 +627,7 @@ local Gspot = {
 	image = function(this, label, pos, img, parent)
 		local element = {type = 'image', label = label, pos = this.newpos(pos), img = img, parent = parent, Gspot = this}
 		if img then
-			if type(img) == 'string' then
-				element.img = assert(love.graphics.newImage(img))
-			end
-			element.pos.w = element.img:getWidth()
-			element.pos.h = element.img:getHeight()
+			this.newimage(element)
 		end
 		return this:add(element)
 	end,
@@ -632,19 +638,19 @@ local Gspot = {
 		return this:add(element)
 	end,
 	imgbutton = function(this, label, pos, img, parent)
-		if type(img) == 'string' then
-			img = assert(love.graphics.newImage(img))
-		end
 		local element = {type = 'button', label = label, pos = this.newpos(pos), img = img, parent = parent, Gspot = this}
+		if img then
+			this.newimage(element)
+		end
 		return this:add(element)
 	end,
 	option = function(this, label, pos, value, parent)
-		local id = this:button(label, pos, parent)
-		this:element(id).value = value
-		this:element(id).click = function(this)
+		local element = this:element(this:button(label, pos, parent))
+		element.value = value
+		element.click = function(this)
 			this.Gspot:element(this.parent).value = this.value
 		end
-		return id
+		return element.id
 	end,
 	
 	-- input
@@ -720,11 +726,9 @@ local Gspot = {
 	scrollgroup = function(this, label, pos, parent)
 		local element = {type = 'scrollgroup', label = label, pos = this.newpos(pos), parent = parent, maxh = 0, Gspot = this}
 		element.canvas = love.graphics.newFramebuffer(element.pos.w, element.pos.h)
-		local id = this:add(element)
-		
-		local scrollid = this:scroll(nil, {x = element.pos.w, y = 0, w = this.std, h = element.pos.h}, {min = 0, max = 0, current = 0, step = this.std}, id)
-		
-		return id
+		local element = this:element(this:add(element))
+		element.child = this:scroll(nil, {x = element.pos.w, y = 0, w = this.std, h = element.pos.h}, {min = 0, max = 0, current = 0, step = this.std}, element.id)
+		return element.id
 	end,
 	
 	hidden = function(this, label, pos, parent)
