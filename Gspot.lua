@@ -40,9 +40,11 @@ local Gspot = {
 	newpos = function(t)
 		local pos = {}
 		if t.x and t.y then
-			for i, v in pairs(t) do
-				pos[i] = v
-			end
+			pos.x = t.x or 16
+			pos.y = t.y or 16
+			pos.w = t.w or 16
+			pos.h = t.h or 16
+			pos.r = t.r or nil
 		else
 			pos.x, pos.y, pos.w, pos.h = t[1], t[2], t[3], t[4]
 			if t[5] then -- not sure if radius will have w and h, so this might change
@@ -441,11 +443,7 @@ local Gspot = {
 				end
 				-- draw group
 				if element.type == 'group' then
-					if element.id == this.mousein then
-						love.graphics.setColor(this.color.default)
-					else
-						love.graphics.setColor(this.color.bg)
-					end
+					love.graphics.setColor(this.color.bg)
 					this.rect(pos)
 					if element.label then
 						if element.color then
@@ -522,11 +520,7 @@ local Gspot = {
 					end
 				-- draw scrollgroup
 				elseif element.type == 'scrollgroup' then
-					if element.id == this.mousein then
-						love.graphics.setColor(this.color.default)
-					else
-						love.graphics.setColor(this.color.bg)
-					end
+					love.graphics.setColor(this.color.bg)
 					this.rect(pos)
 					if element.label then
 						if element.color then
