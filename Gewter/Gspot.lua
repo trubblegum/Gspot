@@ -21,9 +21,10 @@ local Gspot = {
 			mem = {},
 			elements = {},
 			mousein = nil,
-			mousedt = 0,
 			focus = nil,
 			drag = nil,
+			mousedt = 0,
+			dblclickinterval = 0.25,
 			ofont = nil,
 			ocolor = {},
 			orepeat = {},
@@ -341,7 +342,7 @@ local Gspot = {
 				element.offset = {x = x - element.pos.x, y = y - element.pos.y}
 			end
 			if button == 'l' then
-				if this.mousedt < .2 and element.dblclick then
+				if this.mousedt < this.dblclickinterval and element.dblclick then
 					element:dblclick()
 				elseif element.click then
 					element:click()
