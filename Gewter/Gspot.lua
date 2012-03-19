@@ -15,7 +15,7 @@ local Gspot = {
 				hilite = {128, 128, 128, 255},
 				focus = {160, 160, 160, 255},
 				bg = {32, 32, 32, 255},
-				fg = {224, 224, 224, 255}
+				fg = {224, 224, 224, 255},
 			},
 			font = love.graphics.newFont(10), -- set standard gui font
 			mem = {},
@@ -29,8 +29,7 @@ local Gspot = {
 			ocolor = {},
 			orepeat = {},
 		}
-		setmetatable(gui, {__index = this})
-		return gui
+		return setmetatable(gui, {__index = this})
 	end,
 	
 	-- helpers
@@ -60,7 +59,7 @@ local Gspot = {
 		if type(this.img) == 'string' and love.filesystem.exists(this.img) then
 			this.img = assert(love.graphics.newImage(this.img))
 		end
-		if this.type == 'image' and type(img) == 'Image' then
+		if this.img:type() == 'Image' then
 			this.pos.w = this.img:getWidth()
 			this.pos.h = this.img:getHeight()
 		end
@@ -742,4 +741,4 @@ local Gspot = {
 		return this:add(element)
 	end,
 }
-return Gspot
+return Gspot:new()

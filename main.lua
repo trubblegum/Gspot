@@ -72,7 +72,7 @@
 -- scroll(label, position, values, optional parent) -- an independent scrollbar, see also scroll.values above
 
 Gspot = require('Gspot') -- import the library
-gui = Gspot:new() -- create a gui object. you will probably want a gui for each gamestate that requires one, so you don't have to recontsruct the gui every time you enter a state
+gui = Gspot:new() -- create a gui instance. don't have to do this, but you will probably want a gui for each gamestate that requires one, so you don't have to recontsruct the gui every time you enter a state
 
 font = love.graphics.newFont(192)
 
@@ -84,8 +84,8 @@ love.load = function()
 	love.graphics.setColor(24, 16, 8, 255) -- just setting these so we know the gui isn't stealing our thunder
 	
 	-- button
-	-- element constructor functions return the element's id
-	local id = gui:button('button', {gui.std, gui.std, 128, gui.std}) -- create a button(label, position, optional parent) gui.std is a standard gui unit (default 16), used to keep the interface tidy
+	-- element constructor returns the element's id
+	local id = gui:button('button', {x = gui.std, y = gui.std, w = 128, h = gui.std}) -- create a button(label, position, optional parent) gui.std is a standard gui unit (default 16), used to keep the interface tidy
 	gui:element(id).click = function(this) -- use gui:element(id) to get an element reference, and set element:click() to make it respond to gui's click event
 		print('clicky')
 	end
@@ -100,7 +100,7 @@ love.load = function()
 	element.leave = function(this) print("I'm Out!") end
 	
 	-- hidden element
-	element = gui:element(gui:hidden(nil, {128, 128, 128, 128})) -- another way to get a reference. this time creating a hidden element, to see it at work
+	element = gui:element(gui:hidden(nil, {128, 128, 128, 128})) -- the quick way to get a reference. this time creating a hidden element, to see it at work
 	element.tip = "can't see me, but I still respond"
 	
 	-- group will carry its children with it, positioned relatively
