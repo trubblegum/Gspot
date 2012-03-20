@@ -8,7 +8,6 @@
 local Gspot = {
 	new = function(this)
 		local gui = {
-			maxid = 0,
 			std = 16, -- set a standard gui unit
 			color = { -- define colors
 				default = {96, 96, 96, 255},
@@ -18,18 +17,20 @@ local Gspot = {
 				fg = {224, 224, 224, 255},
 			},
 			font = love.graphics.newFont(10), -- set standard gui font
+			dblclickinterval = 0.25, -- double click rate
+			-- no messin' past here
+			maxid = 0,
 			mem = {},
 			elements = {},
 			mousein = nil,
 			focus = nil,
 			drag = nil,
 			mousedt = 0,
-			dblclickinterval = 0.25,
 			ofont = nil,
 			ocolor = {},
 			orepeat = {},
 		}
-		return setmetatable(gui, {__index = this})
+		return setmetatable(gui, {__index = this, __call = this.new})
 	end,
 	
 	-- helpers
