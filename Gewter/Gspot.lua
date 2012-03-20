@@ -362,7 +362,7 @@ local Gspot = {
 	end,
 
 	mouserelease = function(this, x, y, button)
-		if this.drag then
+		if this.drag and this:element(this.drag) then
 			local element = this:element(this.drag)
 			if button == 'l' then
 				if element.drop then
