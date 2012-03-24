@@ -1,10 +1,16 @@
-Gspöt - a stately GUI lib for LÖVE
+Gspöt - a stateful GUI lib for LÖVE
 
+Notes :
+- Gspot has been re-written to base its functionality on references alone.
+- This doc contains out-of-date information.
+- Work on migrating docs to the git wiki is ongoing.
+
+Files :
 - Gspot.lua : the lib's only required file
 - main.lua : commented examples and quick ref
 - conf.lua : LÖVE config
 - img.png : example image
-- /Gewter : a super awesome platform shooter, made using Gspot as a game engine. Note that this was quite hastily thrown together, so all kinds of bad practice can be learned here.
+- /Gewter : a super awesome platform shooter, made using an outdated version of Gspot as a game engine. Note that this was quite hastily thrown together, so all kinds of bad practice can be learned here.
 
 Aims :
 - ease of use
@@ -72,7 +78,6 @@ Don't override these
 - element.orig
 
 Predefined element behaviours :
-Check with Gspot.lua when overriding these
 
 - option.click
 - input.click, keypress, done
@@ -107,3 +112,4 @@ Values need not be indexed if values are in the correct order. Gspot will take c
 Note that these tables are processed by gui.pos() and gui.scrollvalues() which create new tables, so get your references post-creation.
 
 Gspot is free to use under the Zlib/libpng license.
+Fragments attributed to vrld's Quickie : https://github.com/vrld/Quickie
