@@ -8,7 +8,7 @@ Files :
 - main.lua : commented examples and quick ref -- may contain invalid assertions, due to recent changes
 - conf.lua : LÖVE config
 - img.png : example image
-- /Gewter : a super awesome platform shooter, made using an outdated version of Gspot as a game engine. Note that this was quite hastily thrown together, so all kinds of bad practice can be learned here.
+- /Gewter : a super awesome platform shooter, made using an outdated version of Gspot as a game engine. Note that this uses an outdated version of Gspot, but can be converted - I just haven'tgotten around to it yet.
 
 Aims :
 - ease of use
