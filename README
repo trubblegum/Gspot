@@ -1,13 +1,11 @@
 Gspöt - a stateful GUI lib for LÖVE
 
 Notes :
-- Gspot has been re-written to base its functionality on references alone.
-- This doc contains out-of-date information.
-- Work on migrating docs to the git wiki is ongoing.
+- Work on migrating docs to the wiki is ongoing.
 
 Files :
 - Gspot.lua : the lib's only required file
-- main.lua : commented examples and quick ref
+- main.lua : commented examples and quick ref -- may contain invalid assertions, due to recent changes
 - conf.lua : LÖVE config
 - img.png : example image
 - /Gewter : a super awesome platform shooter, made using an outdated version of Gspot as a game engine. Note that this was quite hastily thrown together, so all kinds of bad practice can be learned here.
@@ -19,97 +17,10 @@ Aims :
 
 What it does :
 - range of one-line GUI elements, with default functionality included
-- custom callbacks for 16 events
-- element grouping
-- element or group level display toggling
-- consistent GUI styling using Gspot.std, Gspot.color, Gspot.font
-- element level font, colour, image
+- custom callbacks for a variety or events
+- element grouping and relative positioning
+- cascading element styles
 - element level update and keyrepeat
-
-What it doesn't do :
-- custom draw functions
-- per-element custom background colours
-- prepare a hearty home-cooked meal
-
-Elements defined :
-
-- gui:group(label, pos, optional parent) - a box with a label, great for arranging gui elements in
-- gui:text(text, pos, optional parent) - a text object, alighned left and wrapped to pos.w
-- gui:image(label, pos, img, optional parent) - an image, with label as a caption, centered below. if img is not nil, sets the dimensions of the element to match the image, else nothing will be rendered
-- gui:button(label, pos, optional parent) - a box with a label, great for clicking on
-- gui:imgbutton(label, pos, img, optional parent) - a button with an image, which will be centered on the button. a transparent image will show the gui's hilighting underneath. does not alter element dimensions
-- gui:option(label, pos, value, optional parent) - a button which remembers if it was clicked
-- gui:scroll(label, pos, values, optional parent) - a vertical scrollbar
-- gui:scrollgroup(label, pos, optional parent) - a vertical scrolling window, with its own scrollbar
-- gui:hidden(label, pos, optional parent) - an invisible element, which is never drawn, but its tooltip is, and is not brought to the front. it only has a label so it doesn't feel left out
-
-Element format :
-
-element = {id = gui.maxid(), label = string or nil, pos = gui.pos(position), display = true}
-Where position = {x = number, y = number, w = number, h = number}
-
-+ optionally :
-
-- parent = number - must be an element id, positions the element relative to its parent
-- display = false - don't draw or register events. setting this will not propagate display state to children. use Gspot:hide(id) and Gspot:show(id)
-- tip = string - a tooltip to display near the top left corner of the element when the mouse is inside the element
-- font = love fontData - sets a font other than the default to print element.label with
-- color = love RGBA. sets a color other than the default to print element.label with
-- keyrepeat = number - sets the repeat interval for this element's key events (defaults to 200 for Gspot.input)
-- keydelay = number - sets a delay before repeating key events for this element (defaults to element.keyrepeat, or 500 for Gspot.input)
-- updateinterval = number - sets the repeat interval for this element's update events (defaults to every frame)
-
-Other, element-specific variables :
-
-- button.img = imageData or path - optionally displays the image centered on the button, and moves the label to the top
-- image.img = imageData or path - in both cases, the element will so img = assert(love.graphics.newImage(img)) if img is a string
-- scroll.offset
-- scroll.values = {min, max, current, step}
-- scrollgroup.maxh - the overall height (lowest pixel) of the scrollgroup's contents. updated when a child element is added
-- scrollgroup.child - id of the scrollgroup's scrollbar
-- option.value - a value stored in a button. it will be copied into parent.value when clicked
-- input.value - string entered into the box - default ''
-- input.cursor - cursor position - default 0
-
-Reserved element variables :
-Don't override these
-
-- element.id
-- element.orig
-
-Predefined element behaviours :
-
-- option.click
-- input.click, keypress, done
-- scroll.wheelup, wheeldown, drag
-- scrollgroup.child
-
-- Events :
-
-- enter = function(this) - register a mouseenter behaviour
-- leave = function(this) - register a mouseleave behaviour
-- click = function(this) - register a click behaviour
-- rclick = function(this) - register a right-click behaviour
-- dblclick = function(this) -- registers a behaviour which will be called if the mouse is clicked within .2s of the last click. only the first click will trigger the click behaviour
-- drag = true - registers for the defualt drag behaviour, which follows the mouse, or scrolls the scrollbar if element is a scrollbar
-- drag = function(this) - registers for the defualt drag behaviour, followed by an additional custom drag behaviour
-- rdrag = true - registers for the default right-drag behaviour, which follows the mouse
-- rdrag = function(this) - registers for the defualt right-drag behaviour, followed by an additional custom right-drag behaviour
-- drop = function(this, bucket) - register a drop behaviour. Gspot will call bucket.catch() where bucket is the object which is dropped onto, or nil if none - for some reason I can't fathom, scrollbars don't respond
-- rdrop = function(this, bucket) - register a right-drop behaviour. Gspot will trigger bucket.rcatch()
-- catch = function(this, ball) - register a catch behaviour. ball is the object which was dragged
-- rcatch = function(this, ball) - register a right-catch behaviour. element.rcatch = element.catch may be desirable, but is not default
-- wheelup = function(this) - register a mousewheel up behaviour which will be called if the mouse is over the element.
-- wheeldown = function(this) - register a mousewheel down behaviour which will be called if the mouse is over the element.
-- keypress = function(this, key, code) - registers a keypress behaviour. If element.keyrepeat then this will be called every this.keyrepeat while the element has focus.
-- update = function(this, dt) - register a function which will be called every frame, or every element.updateinterval ms. suggest use with caution, and include conditions like if this.id == this.Gspot.mousein or similar
-
-- Gspot defined datatypes :
-
-- element.pos = {x = number, y = number, w = number, h = number} or gui.pos({number, number, number, number})
-- scroll.values = {min = number, max = number, current = number, step = number} or gui.scrollvalues({number, number, number, number})
-Values need not be indexed if values are in the correct order. Gspot will take care of this for you.
-Note that these tables are processed by gui.pos() and gui.scrollvalues() which create new tables, so get your references post-creation.
 
 Gspot is free to use under the Zlib/libpng license.
 Fragments attributed to vrld's Quickie : https://github.com/vrld/Quickie
