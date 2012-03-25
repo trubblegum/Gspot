@@ -510,14 +510,14 @@ local Gspot = {
 		draw = function(this, pos)
 			-- option
 			if this.parent and this.value == this.parent.value then
-				if this == this.mousein then
+				if this == this.Gspot.mousein then
 					love.graphics.setColor(this.color.focus)
 				else
 					love.graphics.setColor(this.color.hilite)
 				end
 			-- regular button
 			else
-				if this == this.mousein then
+				if this == this.Gspot.mousein then
 					love.graphics.setColor(this.color.hilite)
 				else
 					love.graphics.setColor(this.color.default)
@@ -560,7 +560,7 @@ local Gspot = {
 			return element
 		end,
 		draw = function(this, pos)
-			if this == this.mousein then
+			if this == this.Gspot.mousein then
 				love.graphics.setColor(this.color.focus)
 			else
 				love.graphics.setColor(this.color.hilite)
@@ -607,7 +607,7 @@ local Gspot = {
 			if this == this.Gspot.focus then
 				love.graphics.setColor(this.color.bg)
 			else
-				if this == this.mousein then
+				if this == this.Gspot.mousein then
 					love.graphics.setColor(this.color.hilite)
 				else
 						love.graphics.setColor(this.color.default)
@@ -647,13 +647,13 @@ local Gspot = {
 			return Gspot:add(element, setscroller)
 		end,
 		draw = function(this, pos)
-			if this == this.mousein then
+			if this == this.Gspot.mousein then
 				love.graphics.setColor(this.color.default)
 			else
 				love.graphics.setColor(this.color.bg)
 			end
 			this.rect(pos)
-			if this == this.mousein then
+			if this == this.Gspot.mousein then
 				love.graphics.setColor(this.color.fg)
 			else
 				love.graphics.setColor(this.color.hilite)
