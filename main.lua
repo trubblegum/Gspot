@@ -87,6 +87,7 @@ love.load = function()
 	-- element constructor returns a reference to the element
 	local button = gui:button('button', {x = gui.style.unit, y = gui.style.unit, w = 128, h = gui.style.unit}) -- create a button(label, position, optional parent) gui.style.unit is a standard gui unit (default 16), used to keep the interface tidy
 	button.click = function(this) -- set element:click() to make it respond to gui's click event
+		gui:feedback('clicky')
 		print('clicky')
 	end
 	

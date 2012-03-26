@@ -75,7 +75,7 @@ local Gspot = {
 					else element.cursorlife = element.cursorlife + dt end
 				end
 			end
-			if element.update then -- element.update or Gspot[element.type].update or Gspot.util.update
+			if element.update then
 				if element.updateinterval then
 					element.dt = element.dt or 0
 					element.dt = element.dt + dt
@@ -180,25 +180,6 @@ local Gspot = {
 		end
 	end,
 	
-	-- legacy
-	newid = function(this)
-		this.maxid = this.maxid + 1
-		return this.maxid
-	end,
-	-- /legacy
-	
-	clone = function(this, t)
-		local c = {}
-		for i, v in pairs(t) do
-			if type(v) == 'table' then c[i] = this:clone(v) else c[i] = v end
-		end
-		return setmetatable(c, getmetatable(t))
-	end,
-	
-	getindex = function(tab, val)
-		for i, v in pairs(tab) do if v == val then return i end end
-	end,
-	
 	pos_mt = {
 		__unm = function(a)
 			local c = {x = a.x, y = a.y, w = a.w, h = a.h, r = a.r}
@@ -261,6 +242,34 @@ local Gspot = {
 	
 	element = function(this, type, label, pos, parent)
 		return setmetatable({type = type, label = label, pos = this:pos(pos), parent = parent, children = {}, Gspot = this}, {__index = this[type]})
+	end,
+	
+	scrollvalues = function(this, values)
+		local val = {}
+		val.min = values.min or values[1] or 0
+		val.max = values.max or values[2] or values.current or values[3] or 0
+		val.current = values.current or values[3] or val.min
+		val.step = values.step or values[4] or math.min(values.max, this.style.unit)
+		return val
+	end,
+	
+	-- legacy
+	newid = function(this)
+		this.maxid = this.maxid + 1
+		return this.maxid
+	end,
+	-- /legacy
+	
+	clone = function(this, t)
+		local c = {}
+		for i, v in pairs(t) do
+			if type(v) == 'table' then c[i] = this:clone(v) else c[i] = v end
+		end
+		return setmetatable(c, getmetatable(t))
+	end,
+	
+	getindex = function(tab, val)
+		for i, v in pairs(tab) do if v == val then return i end end
 	end,
 	
 	add = function(this, element, setscroller) -- need a more elegant solution
@@ -411,19 +420,6 @@ Gspot.util = {
 		mode = mode or 'fill'
 		love.graphics.rectangle(mode, pos.x, pos.y, pos.w, pos.h)
 	end,
-	
-	scrollvalues = function(this, values)
-		local sv = {}
-		for i, v in pairs(values) do sv[i] = v end
-		if sv.min and sv.max and sv.current and sv.step then return sv
-		else
-			local val = {}
-			val.min, val.max, val.current, val.step = sv[1], sv[2], sv[3], sv[4]
-			val.current = val.current or val.min
-			val.step = val.step or this.Gspot.style.unit
-			return val
-		end
-	end,
 }
 
 Gspot.group = {
@@ -451,7 +447,7 @@ Gspot.text = {
 	end,
 	draw = function(this, pos)
 		love.graphics.setColor(this.style.fg)
-		love.graphics.printf(this.label, pos.x + (this.Gspot.style.unit / 4), pos.y + ((this.Gspot.style.unit - this.style.font:getHeight('dp')) / 2), pos.w - (this.style.unit / 2), 'left')
+		love.graphics.printf(this.label, pos.x + (this.style.unit / 4), pos.y + ((this.style.unit - this.style.font:getHeight('dp')) / 2), pos.w - (this.style.unit / 2), 'left')
 	end,
 }
 setmetatable(Gspot.text, {__index = Gspot.util, __call = Gspot.text.load})
@@ -507,7 +503,7 @@ setmetatable(Gspot.button, {__index = Gspot.util, __call = Gspot.button.load})
 Gspot.imgbutton = {
 	load = function(this, Gspot, label, pos, img, parent)
 		local element = Gspot:button(label, pos, parent)
-		element.img = this:loadimg(img)
+		element.img = this:loadimage(img)
 		return Gspot:add(element)
 	end,
 }
@@ -610,7 +606,7 @@ Gspot.scroll = {
 	load = function(this, Gspot, label, pos, values, parent, setscoller)
 		local element = Gspot:element('scroll', label, pos, parent)
 		element.drag = true
-		element.values = this:scrollvalues(values)
+		element.values = Gspot:scrollvalues(values)
 		element.wheelup = function(this) this.values.current = math.max(this.values.current - this.values.step, this.values.min) end
 		element.wheeldown = function(this) this.values.current = math.min(this.values.current + this.values.step, this.values.max) end
 		element.offset = {x = 0, y = 0}
@@ -669,5 +665,47 @@ Gspot.radius = {
 	end,
 }
 setmetatable(Gspot.radius, {__index = Gspot.util, __call = Gspot.radius.load})
+
+Gspot.feedback = {
+	lines = 0,
+	load = function(this, Gspot, label, pos, parent)
+		pos = pos or {}
+		local autopos = false
+		if (not pos.y) and (not pos[3]) then
+			autopos = true
+			this.lines = this.lines + 1
+		end
+		pos.x = pos.x or pos[1] or Gspot.style.unit
+		pos.y = pos.y or pos[2] or Gspot.style.unit * this.lines
+		pos.w = 0
+		pos.h = 0
+		local element = Gspot:add(Gspot:element('feedback', label, pos, parent))
+		element.style.fg = {255, 255, 255, 255}
+		element.alpha = 255
+		element.life = 3
+		element.autopos = autopos
+		return element
+	end,
+	update = function(this, dt)
+		this.alpha = this.alpha - ((255 * dt) / this.life)
+		if this.alpha < 0 then
+			local shift = false
+			for i, element in ipairs(this.Gspot.elements) do
+				if element.type == 'feedback' and element.autopos and shift then element.pos.y = element.pos.y - this.Gspot.style.unit end
+				if element == this and this.autopos then shift = true end
+			end
+			this.Gspot.feedback.lines = this.Gspot.feedback.lines - 1
+			this.Gspot:rem(this)
+			return
+		end
+		local color = this.style.fg
+		this.style.fg = {color[1], color[2], color[3], this.alpha}
+	end,
+	draw = function(this, pos)
+		love.graphics.setColor(this.style.fg)
+		love.graphics.print(this.label, pos.x + (this.style.unit / 4), pos.y + ((this.style.unit - this.style.font:getHeight('dp')) / 2))
+	end,
+}
+setmetatable(Gspot.feedback, {__index = Gspot.util, __call = Gspot.feedback.load})
 
 return Gspot:load()
