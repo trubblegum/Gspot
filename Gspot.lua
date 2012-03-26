@@ -52,13 +52,13 @@ local Gspot = {
 						element.values.current = element.values.min + ((element.values.max - element.values.min) * ((math.min(math.max(pos.y, mouse.y), (pos.y + pos.h)) - pos.y) / pos.h))
 					else
 						if love.mouse.isDown('l') and type(element.drag) == 'function' then
-							element:drag(mousein)
+							element:drag()
 						else
 							element.pos.y = mouse.y - element.offset.y
 							element.pos.x = mouse.x - element.offset.x
 						end
 						if love.mouse.isDown('r') and type(element.rdrag) == 'function' then
-							element:rdrag(mousein)
+							element:rdrag()
 						else
 							element.pos.y = mouse.y - element.offset.y
 							element.pos.x = mouse.x - element.offset.x
@@ -141,7 +141,7 @@ local Gspot = {
 			if element.type ~= 'hidden' then element:getparent():stack() end
 			if element.drag then
 				this.drag = element
-				element.offset = {x = x - element.pos.x, y = y - element.pos.y}
+				element.offset = {x = x - element:getpos().x, y = y - element:getpos().y}
 			end
 			if button == 'l' then
 				if this.mousedt < this.dblclickinterval and element.dblclick then element:dblclick(x, y, button)
@@ -317,6 +317,7 @@ Gspot.util = {
 	end,
 	
 	remchild = function(this, child)
+		child.pos = child:getpos()
 		table.remove(this.children, this.getindex(this.children, child))
 		child.parent = nil
 	end,
