@@ -192,7 +192,11 @@ local Gspot = {
 		for i, v in pairs(t) do
 			if type(v) == 'table' then c[i] = this:clone(v) else c[i] = v end
 		end
-		return c
+		return setmetatable(c, getmetatable(t))
+	end,
+	
+	getindex = function(tab, val)
+		for i, v in pairs(tab) do if v == val then return i end end
 	end,
 	
 	pos_mt = {
@@ -256,14 +260,13 @@ local Gspot = {
 	end,
 	
 	element = function(this, type, label, pos, parent)
-		return setmetatable({type = type, label = label, pos = this:pos(pos), parent = parent, Gspot = this}, {__index = this[type]})
+		return setmetatable({type = type, label = label, pos = this:pos(pos), parent = parent, children = {}, Gspot = this}, {__index = this[type]})
 	end,
 	
 	add = function(this, element, setscroller) -- need a more elegant solution
 		element.id = this:newid() -- legacy
 		element.label = element.label or ' '
 		element.display = true
-		element.children = {}
 		table.insert(this.elements, element)
 		if element.parent and element.parent.style then
 			element.style = setmetatable({}, {__index = element.parent.style})
@@ -287,14 +290,14 @@ local Gspot = {
 	end,
 
 	rem = function(this, element)
-		if element.parent then table.remove(element.parent.children, this.util.getindex(element.parent.children, element)) end
+		if element.parent then table.remove(element.parent.children, this.getindex(element.parent.children, element)) end
 		while #element.children > 0 do
 			for i, child in ipairs(element.children) do this:rem(child) end
 		end
 		if element == this.mousein then this.mousein = nil end
 		if element == this.drag then this.drag = nil end
 		if element == this.focus then this:unfocus() end
-		table.remove(this.elements, this.util.getindex(this.elements, element))
+		table.remove(this.elements, this.getindex(this.elements, element))
 	end,
 	
 	setfocus = function(this, element)
@@ -316,7 +319,7 @@ local Gspot = {
 
 Gspot.util = {
 	getpos = function(this)
-		local pos = this.Gspot:pos(this.pos)
+		local pos = this.Gspot:pos(this)
 		if this.parent then
 			pos = pos + this.parent:getpos()
 			if this.parent.type == 'scrollgroup' and this ~= this.parent.scroller then pos.y = pos.y - this.parent.scroller.values.current end
@@ -345,12 +348,9 @@ Gspot.util = {
 	end,
 	
 	loadimage = function(this, img)
+		img = img or this.img
 		if type(img) == 'string' and love.filesystem.exists(img) then return love.graphics.newImage(img)
 		else return nil end
-	end,
-	
-	getindex = function(tab, val)
-		for i, v in pairs(tab) do if v == val then return i end end
 	end,
 	
 	getparent = function(this)
@@ -365,7 +365,7 @@ Gspot.util = {
 	
 	remchild = function(this, child)
 		child.pos = child:getpos()
-		table.remove(this.children, this.getindex(this.children, child))
+		table.remove(this.children, this.Gspot.getindex(this.children, child))
 		child.parent = nil
 	end,
 	

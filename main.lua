@@ -119,7 +119,7 @@ love.load = function()
 		option = gui:option('option '..i, {0, gui.style.unit * i, 128, gui.style.unit}, i, group1) -- create an option(label, position, value, optional parent) option is just a button with a default click function which stores this.value in this.parent.value, and is selected if this.value == this.parent.value
 		option.tip = 'select '..option.value
 		-- if you want to add a click() to an option element and retain its default functionality, start its click() with the following line
-		-- this.Gspot:element(this.parent).value = this.value
+		-- this.parent.value = this.value
 	end
 	
 	-- another group, with various behaviours
@@ -175,7 +175,7 @@ love.load = function()
 	end
 	-- Note : you probably don't want to override input's default keypress()
 	-- if you want to override input's default click(), be sure to include the following default focus behaviour, or the gui won't pass it any keyboard events
-	-- this.Gspot:focus(this.id)
+	-- this:focus()
 	button = gui:button('Speak', {input.pos.w + gui.style.unit, 0, 64, gui.style.unit}, input) -- attach a button
 	button.click = function(this) -- use click event
 		this.parent:done() --  to trigger the input's done() behaviour
