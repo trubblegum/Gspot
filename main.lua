@@ -99,8 +99,8 @@ love.load = function()
 	button.leave = function(this) print("I'm Out!") end
 	
 	-- hidden element
-	--local hidden = gui:hidden(nil, {128, 128, 128, 128}) -- creating a hidden element, to see it at work
-	--hidden.tip = "can't see me, but I still respond"
+	local hidden = gui:hidden(nil, {128, 128, 128, 128}) -- creating a hidden element, to see it at work
+	hidden.tip = "can't see me, but I still respond"
 	
 	-- group will carry its children with it, positioned relatively
 	group1 = gui:group('group', {gui.style.unit, gui.style.unit * 3, 128, gui.style.unit}) -- create a group(label, position, optional parent), like a simple window
@@ -144,7 +144,7 @@ love.load = function()
 		print('scroll '..this.values.current..' / '..this.values.min..' - '..this.values.max) -- a scrollbar's values are min, max, current, step
 	end
 	-- text within scrollgroup
-	button = gui:button('button', {}, scrollgroup)
+	button = gui:button('button', {w = 64}, scrollgroup)
 	local str = 'Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'
 	for i = 1, 8 do
 		gui:text(str, {0, scrollgroup.maxh, 128, 0}, scrollgroup) -- adding these to scrollgroup, Gspot will take care of setting height
@@ -199,8 +199,8 @@ love.load = function()
 	
 	-- or if you feel so inclined
 	gui.mostbasic = function(this, label, pos, parent)
-		local element = {type = 'group', label = label, pos = this.newpos(pos), parent = parent, Gspot = this} -- the element must contain at least this much. type must be one of the drawable types, or it won't be drawn
-		return this:add(element) -- gui.add() gives the element an id, adds it to the collection of elements, and returns the new element's id
+		return this:add(gui:element('group', label, pos, parent)) -- gui.add() gives the element its required values and inheritance, adds it to the collection of elements, and returns the new element's id
+		-- type must be an existing type, or it won't work
 	end
 	
 	--show, hide, and update

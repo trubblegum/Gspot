@@ -187,13 +187,61 @@ local Gspot = {
 	end,
 	-- /legacy
 	
+	clone = function(this, t)
+		local c = {}
+		for i, v in pairs(t) do
+			if type(v) == 'table' then c[i] = this:clone(v) else c[i] = v end
+		end
+		return c
+	end,
+	
 	pos_mt = {
-		__unm = function(a) a.x = 0 - a.x; a.y = 0 - a.y; return a end,
-		__add = function(a, b) a.x = a.x + b.x; a.y = a.y + b.y; return a end,
-		__sub = function(a, b) a.x = a.x - b.x; a.y = a.y - b.y; return a end,
-		__mul = function(a, b) a.x = a.x * b.x; a.y = a.y * b.y; return a end,
-		__div = function(a, b) a.x = a.x / b.x; a.y = a.y / b.y; return a end,
-		__pow = function(a, b) a.x = a.x ^ b.x; a.y = a.y ^ b.y; return a end,
+		__unm = function(a)
+			local c = {x = a.x, y = a.y, w = a.w, h = a.h, r = a.r}
+			c.x = 0 - a.x
+			c.y = 0 - a.y
+			return setmetatable(c, getmetatable(a))
+		end,
+		__add = function(a, b)
+			local c = {x = a.x, y = a.y, w = a.w, h = a.h, r = a.r}
+			local d = b.x or b
+			c.x = a.x + d
+			d = b.y or b
+			c.y = a.y + d
+			return setmetatable(c, getmetatable(a))
+		end,
+		__sub = function(a, b)
+			local c = {x = a.x, y = a.y, w = a.w, h = a.h, r = a.r}
+			local d = b.x or b
+			c.x = a.x - d
+			d = b.y or b
+			c.y = a.y - d
+			return setmetatable(c, getmetatable(a))
+		end,
+		__mul = function(a, b)
+			local c = {x = a.x, y = a.y, w = a.w, h = a.h, r = a.r}
+			local d = b.x or b
+			c.x = a.x * d
+			d = b.y or b
+			c.y = a.y * d
+			return setmetatable(c, getmetatable(a))
+		end,
+		__div = function(a, b)
+			local c = {x = a.x, y = a.y, w = a.w, h = a.h, r = a.r}
+			local d = b.x or b
+			c.x = a.x / d
+			d = b.y or b
+			c.y = a.y / d
+			return setmetatable(c, getmetatable(a))
+		end,
+		__pow = function(a, b)
+			local c = {x = a.x, y = a.y, w = a.w, h = a.h, r = a.r}
+			local d = b.x or b
+			c.x = a.x ^ d
+			d = b.y or b
+			c.y = a.y ^ d
+			return setmetatable(c, getmetatable(a))
+		end,
 	},
 	
 	pos = function(this, t)
@@ -201,18 +249,17 @@ local Gspot = {
 		local pos = {}
 		pos.x = t.x or t[1] or this.style.unit
 		pos.y = t.y or t[2] or this.style.unit
-		pos.w = t.w or t[3] or this.style.unit * 4
+		pos.w = t.w or t[3] or this.style.unit
 		pos.h = t.h or t[4] or this.style.unit
-		pos.r = t.r or t[5] or nil
+		pos.r = t.r or t[5] or this.style.unit
 		return setmetatable(pos, this.pos_mt)
 	end,
 	
 	element = function(this, type, label, pos, parent)
-		return setmetatable({type = type, label = label, pos = this:pos(pos), parent = parent}, {__index = this[type]})
+		return setmetatable({type = type, label = label, pos = this:pos(pos), parent = parent, Gspot = this}, {__index = this[type]})
 	end,
 	
 	add = function(this, element, setscroller) -- need a more elegant solution
-		element.Gspot = this
 		element.id = this:newid() -- legacy
 		element.label = element.label or ' '
 		element.display = true
@@ -269,7 +316,7 @@ local Gspot = {
 
 Gspot.util = {
 	getpos = function(this)
-		local pos = this.Gspot:pos(this)
+		local pos = this.Gspot:pos(this.pos)
 		if this.parent then
 			pos = pos + this.parent:getpos()
 			if this.parent.type == 'scrollgroup' and this ~= this.parent.scroller then pos.y = pos.y - this.parent.scroller.values.current end
@@ -299,7 +346,7 @@ Gspot.util = {
 	
 	loadimage = function(this, img)
 		if type(img) == 'string' and love.filesystem.exists(img) then return love.graphics.newImage(img)
-		else return img end
+		else return nil end
 	end,
 	
 	getindex = function(tab, val)
@@ -586,7 +633,7 @@ Gspot.scrollgroup = {
 		local element = Gspot:element('scrollgroup', label, pos, parent)
 		element.maxh = 0
 		element.canvas = love.graphics.newFramebuffer(element.pos.w, element.pos.h)
-		local element = Gspot:add(element)
+		element = Gspot:add(element)
 		element.scroller = Gspot:scroll(nil, {x = element.pos.w, y = 0, w = element.style.unit, h = element.pos.h}, {min = 0, max = 0, current = 0, step = element.style.unit}, element, true)
 		return element
 	end,
