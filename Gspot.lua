@@ -359,7 +359,7 @@ Gspot.util = {
 	loadimage = function(this, img)
 		img = img or this.img
 		if type(img) == 'string' and love.filesystem.exists(img) then return love.graphics.newImage(img)
-		else return nil end
+		else return img end
 	end,
 	
 	getparent = function(this)
@@ -456,7 +456,7 @@ Gspot.image = {
 	load = function(this, Gspot, label, pos, img, parent)
 		local element = Gspot:element('image', label, pos, parent)
 		element.img = this:loadimage(img)
-		if element.img:type() == 'Image' then
+		if element.img then
 			element.pos.w = element.img:getWidth()
 			element.pos.h = element.img:getHeight()
 		end
