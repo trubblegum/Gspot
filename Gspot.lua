@@ -283,10 +283,9 @@ local Gspot = {
 		element.display = true
 		table.insert(this.elements, element)
 		if element.parent then
-			element.parent:addchild(element, setscroller)
+			element.parent:addchild(element)
 			if element.parent.type == 'scrollgroup' then
-				if element.type == 'scroll' then
-					if setscroller then element.parent.scroller = element end
+				if setscroller then element.parent.scroller = element
 				else
 					local maxh = 0
 					for i, child in ipairs(element.parent.children) do
@@ -637,8 +636,6 @@ Gspot.scroll = {
 		element.values = Gspot:scrollvalues(values)
 		element.wheelup = function(this) this.values.current = math.max(this.values.current - this.values.step, this.values.min) end
 		element.wheeldown = function(this) this.values.current = math.min(this.values.current + this.values.step, this.values.max) end
-		element.offset = {x = 0, y = 0}
-		element.drag = true
 		return Gspot:add(element, setscroller)
 	end,
 	draw = function(this, pos)
@@ -658,7 +655,7 @@ Gspot.scrollgroup = {
 		element.maxh = 0
 		element.canvas = love.graphics.newFramebuffer(element.pos.w, element.pos.h)
 		element = Gspot:add(element)
-		element.scroller = Gspot:scroll(nil, {x = element.pos.w, y = 0, w = element.style.unit, h = element.pos.h}, {min = 0, max = 0, current = 0, step = element.style.unit}, element, true)
+		element.scroller = Gspot:scroll(nil, {x = element.pos.w, y = 0, w = element.style.unit, h = element.pos.h}, element, {min = 0, max = 0, current = 0, step = element.style.unit}, true)
 		return element
 	end,
 	draw = function(this, pos)

@@ -152,13 +152,13 @@ love.load = function()
 	end
 	
 	-- additional scroll controls
-	button = gui:button('up', {}, group2) -- a small button attached to the scrollgroup's group
+	button = gui:button('up', {group2.pos.w, 0}, group2) -- a small button attached to the scrollgroup's group
 	button.click = function(this) -- decrement scrollgroup.scroller.values.current by scrollgroup.scroller.values.step, and the slider will go up a notch
 		local scroll = scrollgroup.scroller
 		scroll.values.current = math.max(scroll.values.min, scroll.values.current - scroll.values.step)
 		print('scrolling outside gui '..scroll.values.current..' / '..scroll.values.min..' - '..scroll.values.max)
 	end
-	button = gui:button('dn', {128, scrollgroup.pos.h + gui.style.unit, gui.style.unit, gui.style.unit}, group2)
+	button = gui:button('dn', {group2.pos.w, group2.pos.h + gui.style.unit}, group2)
 	button.click = function(this) -- this one increment's scrollbar's values.current, moving the slider down a notch
 		local scroll = scrollgroup.scroller
 		scroll.values.current = math.min(scroll.values.max, scroll.values.current + scroll.values.step)
