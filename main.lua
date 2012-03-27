@@ -138,17 +138,18 @@ love.load = function()
 	group2.catch = function(this, ball) -- respond when an element is dragged and then dropped on this element
 		print('caught '..ball.type)
 	end
-	-- scrollgroup within group (a scrollgroup's children will all scroll)
+	-- scrollgroup within group (a scrollgroup's children, excpeting its scrollbar, will be scrollable)
 	scrollgroup = gui:scrollgroup(nil, {0, gui.style.unit, 128, 256}, group2) -- scrollgroup(label, pos, optional parent). will create its own scrollbar
 	scrollgroup.scroller.tip = 'scroll (mouse or wheel)' -- scrollgroup.scroller is the scrollbar
 	scrollgroup.scroller.drop = function(this)
 		print('dropped at '..this.values.current..' / '..this.values.min..' - '..this.values.max)
 	end
 	-- text within scrollgroup
-	button = gui:button('button', {w = 64}, scrollgroup)
+	scrollgroup:addchild(gui:button('button', {w = 64}), true) -- using the auto-resize flag to update scrollgroup.maxh and scrollgroup.scroller.values.max
 	local str = 'Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'
 	for i = 1, 8 do
-		gui:text(str, {0, scrollgroup.maxh, 128, 0}, scrollgroup) -- adding these to scrollgroup, Gspot formats text and resizes the element to fit it, and sets scrollgroup.mahx and scrollgroup.scroller.values.max when adding to a scrollgroup
+		local text = gui:text(str, {0, scrollgroup.maxh, 128, 0}) -- Gspot formats text and sets element.pos.h to fit it in
+		scrollgroup:addchild(text, true)
 	end
 	
 	-- additional scroll controls

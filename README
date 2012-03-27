@@ -17,11 +17,11 @@ Aims :
 - visual consistency
 
 What it does :
-- range of one-line GUI elements, with useful default functionality, including buttons, inputs, scrollgroups, fading feedback queue, etc
+- range of one-line GUI elements, with default functionality and manipulation functions
 - callbacks for a wide variety of events
 - element grouping and relative positioning
 - cascading element styles
-- time-managed element-level update functions
+- timed element-level update functions
 
 Gspot is free to use under the Zlib/libpng license.
 Fragments attributed to vrld's Quickie : https://github.com/vrld/Quickie

@@ -17,7 +17,6 @@ local Gspot = {
 				focus = {160, 160, 160, 255},
 			},
 			dblclickinterval = 0.25,
-			rendertarget = nil,
 			-- no messin' past here
 			maxid = 0, -- legacy
 			mem = {},
@@ -102,21 +101,22 @@ local Gspot = {
 		ostyle.colormode = love.graphics.getColorMode()
 		ostyle.font = love.graphics.getFont()
 		ostyle.r, ostyle.g, ostyle.b, ostyle.a = love.graphics.getColor()
+		ostyle.scissor = {}
+		ostyle.scissor.x, ostyle.scissor.y, ostyle.scissor.w, ostyle.scissor.h = love.graphics.getScissor()
 		love.graphics.setColorMode('replace')
 		for i, element in ipairs(this.elements) do
 			if element.display then
 				local pos = element:getpos()
-				love.graphics.setFont(element.style.font)
 				if element.parent and element.parent.type == 'scrollgroup' and element ~= element.parent.scroller then
-					love.graphics.setRenderTarget(element.parent.canvas)
-					pos = pos - element.parent:getpos()
-				else
-					love.graphics.setRenderTarget(this.rendertarget)
+					ppos = element.parent:getpos()
+					love.graphics.setScissor(ppos.x, ppos.y, ppos.w, ppos.h)
 				end
+				love.graphics.setFont(element.style.font)
 				element:draw(pos)
+				if ostyle.scissor.x then love.graphics.setScissor(ostyle.scissor.x, ostyle.scissor.y, ostyle.scissor.w, ostyle.scissor.h)
+				else love.graphics.setScissor() end
 			end
 		end
-		love.graphics.setRenderTarget(this.rendertarget)
 		if this.mousein and this.mousein.display and this.mousein.tip then
 			local element = this.mousein
 			local pos = element:getpos()
@@ -129,7 +129,6 @@ local Gspot = {
 		love.graphics.setFont(ostyle.font)
 		love.graphics.setColor(ostyle.r, ostyle.g, ostyle.b, ostyle.a)
 		love.graphics.setColorMode(ostyle.colormode)
-		love.graphics.setRenderTarget()
 	end,
 	
 	mousepress = function(this, x, y, button, dt)
@@ -241,7 +240,8 @@ local Gspot = {
 	element = function(this, type, label, pos, parent)
 		local element = {type = type, label = label, pos = this:pos(pos), parent = parent, children = {}, Gspot = this}
 		local mt
-		if parent then element.style = setmetatable({}, {__index = parent.style}) else element.style = setmetatable({}, {__index = this.style}) end
+		if parent then element.style = setmetatable({}, {__index = parent.style})
+		else element.style = setmetatable({}, {__index = this.style}) end
 		return setmetatable(element, {__index = this[type]})
 	end,
 	
@@ -275,25 +275,12 @@ local Gspot = {
 		for i, v in pairs(tab) do if v == val then return i end end
 	end,
 	
-	add = function(this, element, setscroller) -- need a more elegant solution
+	add = function(this, element)
 		element.id = this:newid() -- legacy
 		element.label = element.label or ' '
 		element.display = true
 		table.insert(this.elements, element)
-		if element.parent then
-			element.parent:addchild(element)
-			if element.parent.type == 'scrollgroup' then
-				if setscroller then element.parent.scroller = element
-				else
-					local maxh = 0
-					for i, child in ipairs(element.parent.children) do
-						if child.type ~= 'scroll' and child.pos.y + child.pos.h > maxh then maxh = child.pos.y + child.pos.h end
-					end
-					element.parent.maxh = maxh
-					if element.parent.scroller then element.parent.scroller.values.max = math.max(maxh - element.parent.pos.h, 0) end
-				end
-			end
-		end
+		if element.parent then element.parent:addchild(element) end
 		return element
 	end,
 
@@ -385,10 +372,17 @@ Gspot.util = {
 		else return this end
 	end,
 	
-	addchild = function(this, child)
+	addchild = function(this, child, resize)
 		table.insert(this.children, child)
 		child.parent = this
 		setmetatable(child.style, {__index = this.style})
+		if resize then
+			this.maxh = 0
+			for i, child in ipairs(this.children) do
+				if child ~= this.scroller and child.pos.y + child.pos.h > this.maxh then this.maxh = child.pos.y + child.pos.h end
+			end
+			if this.scroller then this.scroller.values.max = math.max(this.maxh - this.pos.h, 0) end
+		end
 	end,
 	
 	remchild = function(this, child)
@@ -504,22 +498,18 @@ Gspot.button = {
 		return Gspot:add(Gspot:element('button', label, pos, parent))
 	end,
 	draw = function(this, pos)
-		-- option
 		if this.parent and this.value == this.parent.value then
 			if this == this.Gspot.mousein then love.graphics.setColor(this.style.focus)
 			else love.graphics.setColor(this.style.hilite) end
-		-- regular button
 		else
 			if this == this.Gspot.mousein then love.graphics.setColor(this.style.hilite)
 			else love.graphics.setColor(this.style.default) end
 		end
 		this.rect(pos)
 		love.graphics.setColor(this.style.fg)
-		-- image button
 		if this.img then
 			love.graphics.draw(this.img, ((pos.x + (pos.w / 2)) - (this.img:getWidth()) / 2), ((pos.y + (pos.h / 2)) - (this.img:getHeight() / 2)))
 			if this.label then love.graphics.print(this.label, pos.x + ((pos.w - this.style.font:getWidth(this.label)) / 2), pos.y + ((this.style.unit - this.style.font:getHeight(this.label)) / 2)) end
-		-- regular text button
 		else
 			if this.label then love.graphics.print(this.label, pos.x + ((pos.w - this.style.font:getWidth(this.label)) / 2), pos.y + ((this.pos.h - this.style.font:getHeight(this.label)) / 2)) end
 		end
@@ -599,6 +589,7 @@ Gspot.input = {
 				this.value = this.value:sub(1, this.cursor)..string.char(code)..this.value:sub(this.cursor + 1)
 				this.cursor = this.cursor + 1
 			end
+		-- /fragments attributed
 		end
 		return Gspot:add(element)
 	end,
@@ -653,9 +644,8 @@ Gspot.scrollgroup = {
 	load = function(this, Gspot, label, pos, parent)
 		local element = Gspot:element('scrollgroup', label, pos, parent)
 		element.maxh = 0
-		element.canvas = love.graphics.newFramebuffer(element.pos.w, element.pos.h)
 		element = Gspot:add(element)
-		element.scroller = Gspot:scroll(nil, {x = element.pos.w, y = 0, w = element.style.unit, h = element.pos.h}, element, {min = 0, max = 0, current = 0, step = element.style.unit}, true)
+		this.scroller = Gspot:scroll(nil, {x = element.pos.w, y = 0, w = element.style.unit, h = element.pos.h}, element, {min = 0, max = 0, current = 0, step = element.style.unit})
 		return element
 	end,
 	draw = function(this, pos)
@@ -665,8 +655,6 @@ Gspot.scrollgroup = {
 			love.graphics.setColor(this.style.fg)
 			love.graphics.print(this.label, pos.x + ((pos.w - this.style.font:getWidth(this.label)) / 2), pos.y + ((this.style.unit - this.style.font:getHeight(this.label)) / 2))
 		end
-		love.graphics.setColor({255, 255, 255, 255})
-		love.graphics.draw(this.canvas, pos.x, pos.y, 0, 1, 1, 0, 0)
 	end,
 }
 setmetatable(Gspot.scrollgroup, {__index = Gspot.util, __call = Gspot.scrollgroup.load})
