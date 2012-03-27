@@ -392,27 +392,10 @@ Gspot.util = {
 		setmetatable(child.style, {__index = this.Gspot.style})
 	end,
 	
-	stack = function(this, limit)
+	stack = function(this)
 		local elements = this.Gspot.elements
-		i = 1
-		l = limit or #elements
-		while i <= l do
-			if elements[i] == this then
-				table.insert(elements, table.remove(elements, i))
-				l = l - 1
-				break
-			end
-			i = i + 1
-		end
-		i = 1
-		while i <= l do
-			if elements[i].parent == this then
-				l = elements[i]:stack(l)
-				i = 1
-			end
-			i = i + 1
-		end
-		return l
+		table.insert(elements, table.remove(elements, this.Gspot.getindex(elements, this)))
+		for i, child in ipairs(this.children) do child:stack() end
 	end,
 	
 	show = function(this)
