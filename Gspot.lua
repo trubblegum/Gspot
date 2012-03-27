@@ -117,7 +117,6 @@ local Gspot = {
 			end
 		end
 		love.graphics.setRenderTarget(this.rendertarget)
-		love.graphics.setColor(this.style.fg)
 		if this.mousein and this.mousein.display and this.mousein.tip then
 			local element = this.mousein
 			local pos = element:getpos()

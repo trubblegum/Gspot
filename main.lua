@@ -239,8 +239,9 @@ love.keypressed = function(key, code)
 		else
 			showhider:show()
 		end
+	else
+		gui:keypress(key, code) -- only sending input to Gspot if we're not using it for something else
 	end
-	gui:keypress(key, code) -- if you don't want text input, you don't need this
 end
 
 love.mousepressed = function(x, y, button)
