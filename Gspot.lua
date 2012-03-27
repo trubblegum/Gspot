@@ -118,15 +118,14 @@ local Gspot = {
 		end
 		love.graphics.setRenderTarget(this.rendertarget)
 		love.graphics.setColor(this.style.fg)
-		for i, element in ipairs(this.elements) do
-			if element.display and element == this.mousein and element.tip then
-				local pos = element:getpos()
-				local tippos = {x = pos.x + (this.style.unit / 2), y = pos.y + (this.style.unit / 2), w = element.style.font:getWidth(element.tip) + this.style.unit, h = this.style.unit}
-				love.graphics.setColor(this.style.bg)
-				this.util.rect({x = math.max(0, math.min(tippos.x, love.graphics.getWidth() - (element.style.font:getWidth(element.tip) + this.style.unit))), y = math.max(0, math.min(tippos.y, love.graphics.getHeight() - this.style.unit)), w = tippos.w, h = tippos.h})
-				love.graphics.setColor(this.style.fg)
-				love.graphics.print(element.tip, math.max(this.style.unit / 2, math.min(tippos.x + (this.style.unit / 2), love.graphics.getWidth() - (element.style.font:getWidth(element.tip) + (this.style.unit / 2)))), math.max((this.style.unit - element.style.font:getHeight(element.tip)) / 2, math.min(tippos.y + ((this.style.unit - element.style.font:getHeight('dp')) / 2), (love.graphics.getHeight() - this.style.unit) + ((this.style.unit - element.style.font:getHeight('dp')) / 2))))
-			end
+		if this.mousein and this.mousein.display and this.mousein.tip then
+			local element = this.mousein
+			local pos = element:getpos()
+			local tippos = {x = pos.x + (this.style.unit / 2), y = pos.y + (this.style.unit / 2), w = element.style.font:getWidth(element.tip) + this.style.unit, h = this.style.unit}
+			love.graphics.setColor(this.style.bg)
+			this.util.rect({x = math.max(0, math.min(tippos.x, love.graphics.getWidth() - (element.style.font:getWidth(element.tip) + this.style.unit))), y = math.max(0, math.min(tippos.y, love.graphics.getHeight() - this.style.unit)), w = tippos.w, h = tippos.h})
+			love.graphics.setColor(this.style.fg)
+			love.graphics.print(element.tip, math.max(this.style.unit / 2, math.min(tippos.x + (this.style.unit / 2), love.graphics.getWidth() - (element.style.font:getWidth(element.tip) + (this.style.unit / 2)))), math.max((this.style.unit - element.style.font:getHeight(element.tip)) / 2, math.min(tippos.y + ((this.style.unit - element.style.font:getHeight('dp')) / 2), (love.graphics.getHeight() - this.style.unit) + ((this.style.unit - element.style.font:getHeight('dp')) / 2))))
 		end
 		love.graphics.setFont(ostyle.font)
 		love.graphics.setColor(ostyle.r, ostyle.g, ostyle.b, ostyle.a)
@@ -390,12 +389,14 @@ Gspot.util = {
 	addchild = function(this, child)
 		table.insert(this.children, child)
 		child.parent = this
+		setmetatable(child.style, {__index = this.style})
 	end,
 	
 	remchild = function(this, child)
 		child.pos = child:getpos()
 		table.remove(this.children, this.Gspot.getindex(this.children, child))
 		child.parent = nil
+		setmetatable(child.style, {__index = this.Gspot.style})
 	end,
 	
 	stack = function(this, limit)
