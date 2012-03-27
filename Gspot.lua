@@ -10,11 +10,11 @@ local Gspot = {
 			style = {
 				unit = 16,
 				font = love.graphics.newFont(10),
+				fg = {224, 224, 224, 255},
+				bg = {32, 32, 32, 255},
 				default = {96, 96, 96, 255},
 				hilite = {128, 128, 128, 255},
 				focus = {160, 160, 160, 255},
-				bg = {32, 32, 32, 255},
-				fg = {224, 224, 224, 255},
 			},
 			dblclickinterval = 0.25,
 			rendertarget = nil,
@@ -241,15 +241,18 @@ local Gspot = {
 	end,
 	
 	element = function(this, type, label, pos, parent)
-		return setmetatable({type = type, label = label, pos = this:pos(pos), parent = parent, children = {}, Gspot = this}, {__index = this[type]})
+		local element = {type = type, label = label, pos = this:pos(pos), parent = parent, children = {}, Gspot = this}
+		local mt
+		if parent then element.style = setmetatable({}, {__index = parent.style}) else element.style = setmetatable({}, {__index = this.style}) end
+		return setmetatable(element, {__index = this[type]})
 	end,
 	
 	scrollvalues = function(this, values)
 		local val = {}
 		val.min = values.min or values[1] or 0
-		val.max = values.max or values[2] or values.current or values[3] or 0
+		val.max = values.max or values[2] or 0
 		val.current = values.current or values[3] or val.min
-		val.step = values.step or values[4] or math.min(values.max, this.style.unit)
+		val.step = values.step or values[4] or this.style.unit
 		return val
 	end,
 	
@@ -263,7 +266,9 @@ local Gspot = {
 	clone = function(this, t)
 		local c = {}
 		for i, v in pairs(t) do
-			if type(v) == 'table' then c[i] = this:clone(v) else c[i] = v end
+			if v then
+				if type(v) == 'table' then c[i] = this:clone(v) else c[i] = v end
+			end
 		end
 		return setmetatable(c, getmetatable(t))
 	end,
@@ -277,8 +282,7 @@ local Gspot = {
 		element.label = element.label or ' '
 		element.display = true
 		table.insert(this.elements, element)
-		if element.parent and element.parent.style then
-			element.style = setmetatable({}, {__index = element.parent.style})
+		if element.parent then
 			element.parent:addchild(element, setscroller)
 			if element.parent.type == 'scrollgroup' then
 				if element.type == 'scroll' then
@@ -292,8 +296,6 @@ local Gspot = {
 					if element.parent.scroller then element.parent.scroller.values.max = math.max(maxh - element.parent.pos.h, 0) end
 				end
 			end
-		else
-			element.style = setmetatable({}, {__index = this.style})
 		end
 		return element
 	end,
@@ -356,10 +358,29 @@ Gspot.util = {
 		return false
 	end,
 	
-	loadimage = function(this, img)
-		img = img or this.img
-		if type(img) == 'string' and love.filesystem.exists(img) then return love.graphics.newImage(img)
-		else return img end
+	setimage = function(this, img)
+		if type(img) == 'string' and love.filesystem.exists(img) then
+			img = love.graphics.newImage(img)
+		end
+		if pcall(function(img) return img:type() == 'Image' end, img) then
+			this.img = img
+		else
+			this.img = nil
+		end
+	end,
+	
+	setfont = function(this, font, size)
+		if type(font) == 'string' and love.filesystem.exists(font) then
+			font = love.graphics.newFont(font, size)
+		elseif type(font) == 'number' then
+			font = love.graphics.newFont(font)
+		end
+		if pcall(function(font) return font:type() == 'Font' end, font) then
+			this.style.font = font
+		else
+			this.style.font = nil
+			this.style = this.Gspot:clone(this.style)
+		end
 	end,
 	
 	getparent = function(this)
@@ -431,7 +452,7 @@ Gspot.group = {
 		this.rect(pos)
 		if this.label then
 			love.graphics.setColor(this.style.fg)
-			love.graphics.print(this.label, pos.x + ((pos.w - this.style.font:getWidth(this.label)) / 2), pos.y + ((this.Gspot.style.unit - this.style.font:getHeight('dp')) / 2))
+			love.graphics.print(this.label, pos.x + ((pos.w - this.style.font:getWidth(this.label)) / 2), pos.y + ((this.style.unit - this.style.font:getHeight('dp')) / 2))
 		end
 	end,
 }
@@ -440,10 +461,14 @@ setmetatable(Gspot.group, {__index = Gspot.util, __call = Gspot.group.load})
 Gspot.text = {
 	load = function(this, Gspot, label, pos, parent)
 		local element = Gspot:element('text', label, pos, parent)
-		local width, lines = Gspot.style.font:getWrap(label, element.pos.w)
-		local lines = math.max(lines, 1)
-		element.pos.h = (Gspot.style.font:getHeight('dp') * lines) + (Gspot.style.unit - Gspot.style.font:getHeight('dp'))
+		element:setfont()
 		return Gspot:add(element)
+	end,
+	setfont = function(this, font, size)
+		this.Gspot.util.setfont(this, font, size)
+		local width, lines = this.style.font:getWrap(this.label, this.pos.w)
+		lines = math.max(lines, 1)
+		this.pos.h = (this.style.font:getHeight('dp') * lines) + (this.style.unit - this.style.font:getHeight('dp'))
 	end,
 	draw = function(this, pos)
 		love.graphics.setColor(this.style.fg)
@@ -453,14 +478,17 @@ Gspot.text = {
 setmetatable(Gspot.text, {__index = Gspot.util, __call = Gspot.text.load})
 
 Gspot.image = {
-	load = function(this, Gspot, label, pos, img, parent)
+	load = function(this, Gspot, label, pos, parent, img)
 		local element = Gspot:element('image', label, pos, parent)
-		element.img = this:loadimage(img)
-		if element.img then
-			element.pos.w = element.img:getWidth()
-			element.pos.h = element.img:getHeight()
-		end
+		element:setimage(img)
 		return Gspot:add(element)
+	end,
+	setimage = function(this, img)
+		this.Gspot.util.setimage(this, img)
+		if this.img then
+			this.pos.w = this.img:getWidth()
+			this.pos.h = this.img:getHeight()
+		end
 	end,
 	draw = function(this, pos)
 		if this.img then love.graphics.draw(this.img, pos.x, pos.y) end
@@ -501,16 +529,16 @@ Gspot.button = {
 setmetatable(Gspot.button, {__index = Gspot.util, __call = Gspot.button.load})
 
 Gspot.imgbutton = {
-	load = function(this, Gspot, label, pos, img, parent)
+	load = function(this, Gspot, label, pos, parent, img)
 		local element = Gspot:button(label, pos, parent)
-		element.img = this:loadimage(img)
+		element:setimage(img)
 		return Gspot:add(element)
 	end,
 }
 setmetatable(Gspot.imgbutton, {__index = Gspot.util, __call = Gspot.imgbutton.load})
 
 Gspot.option = {
-	load = function(this, Gspot, label, pos, value, parent)
+	load = function(this, Gspot, label, pos, parent, value)
 		local element = Gspot:button(label, pos, parent)
 		element.value = value
 		element.click = function(this) this.parent.value = this.value end
@@ -520,7 +548,7 @@ Gspot.option = {
 setmetatable(Gspot.option, {__index = Gspot.util, __call = Gspot.option.load})
 
 Gspot.checkbox = {
-	load = function(this, Gspot, label, pos, value, parent)
+	load = function(this, Gspot, label, pos, parent, value)
 		local element = Gspot:element('checkbox', label, pos, parent)
 		element.value = value
 		element.click = function(this) this.value = not this.value end
@@ -603,7 +631,7 @@ Gspot.input = {
 setmetatable(Gspot.input, {__index = Gspot.util, __call = Gspot.input.load})
 
 Gspot.scroll = {
-	load = function(this, Gspot, label, pos, values, parent, setscoller)
+	load = function(this, Gspot, label, pos, parent, values, setscoller)
 		local element = Gspot:element('scroll', label, pos, parent)
 		element.drag = true
 		element.values = Gspot:scrollvalues(values)
@@ -614,10 +642,10 @@ Gspot.scroll = {
 		return Gspot:add(element, setscroller)
 	end,
 	draw = function(this, pos)
-		if this == this.Gspot.mousein then love.graphics.setColor(this.style.default)
+		if this == this.Gspot.mousein or this == this.Gspot.drag then love.graphics.setColor(this.style.default)
 		else love.graphics.setColor(this.style.bg) end
 		this.rect(pos)
-		if this == this.Gspot.mousein then love.graphics.setColor(this.style.fg)
+		if this == this.Gspot.mousein or this == this.Gspot.drag then love.graphics.setColor(this.style.fg)
 		else love.graphics.setColor(this.style.hilite) end
 		this.rect({x = pos.x, y = math.min(pos.y + (pos.h - this.style.unit), math.max(pos.y, pos.y + (pos.h * (this.values.current / (this.values.max - this.values.min))) - (this.style.unit / 2))), w = this.style.unit, h = this.Gspot.style.unit})
 	end,

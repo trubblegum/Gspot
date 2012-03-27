@@ -85,26 +85,26 @@ love.load = function()
 	
 	-- button
 	-- element constructor returns a reference to the element
-	local button = gui:button('button', {x = gui.style.unit, y = gui.style.unit, w = 128, h = gui.style.unit}) -- create a button(label, position, optional parent) gui.style.unit is a standard gui unit (default 16), used to keep the interface tidy
+	local button = gui:button('button', {x = gui.style.unit, y = gui.style.unit, w = 128, h = gui.style.unit}) -- a button(label, pos, optional parent) gui.style.unit is a standard gui unit (default 16), used to keep the interface tidy
 	button.click = function(this) -- set element:click() to make it respond to gui's click event
 		gui:feedback('clicky')
 		print('clicky')
 	end
 	
 	-- image
-	button = gui:image('An Image', {160, 32, 0, 0}, 'img.png') -- an image(label, pos, img, optional parent) img is imageData or path
-	button.click = function(this) -- works for any element
+	local image = gui:image('An Image', {160, 32, 0, 0}, nil, 'img.png') -- an image(label, pos, parent, imageData or path)
+	image.click = function(this) -- works for any element
 		print('clicky clicky')
 	end
-	button.enter = function(this) print("I'm In!") end
-	button.leave = function(this) print("I'm Out!") end
+	image.enter = function(this) print("I'm In!") end
+	image.leave = function(this) print("I'm Out!") end
 	
 	-- hidden element
 	local hidden = gui:hidden(nil, {128, 128, 128, 128}) -- creating a hidden element, to see it at work
 	hidden.tip = "can't see me, but I still respond"
 	
-	-- group will carry its children with it, positioned relatively
-	group1 = gui:group('group', {gui.style.unit, gui.style.unit * 3, 128, gui.style.unit}) -- create a group(label, position, optional parent), like a simple window
+	-- elements' children will be positioned relative to their parent's position
+	group1 = gui:group('group', {gui.style.unit, gui.style.unit * 3, 128, gui.style.unit}) -- group(label, pos, optional parent)
 	group1.style.fg = {255, 192, 0, 255}
 	group1.tip = 'drag and drop' -- add a tooltip
 	group1.drag = true -- respond to gui's drag behaviour. note that children will not respond to parent's events
@@ -117,9 +117,9 @@ love.load = function()
 	end
 	-- option (must have a parent)
 	for i = 1, 3 do
-		option = gui:option('option '..i, {0, gui.style.unit * i, 128, gui.style.unit}, i, group1) -- create an option(label, position, value, optional parent) option is just a button with a default click function which stores this.value in this.parent.value, and is selected if this.value == this.parent.value
+		option = gui:option('option '..i, {0, gui.style.unit * i, 128, gui.style.unit}, group1, i) -- option(label, pos, parent, value) option stores this.value in this.parent.value when clicked, and is selected if this.value == this.parent.value
 		option.tip = 'select '..option.value
-		-- if you want to add a click() to an option element and retain its default functionality, start its click() with the following line
+		-- if you want to add a click() to an option element and retain its default functionality, include the following
 		-- this.parent.value = this.value
 	end
 	
@@ -129,32 +129,32 @@ love.load = function()
 	group2.tip = 'drag, right-click, and catch'
 	group2.rclick = function(this) -- respond to gui's right-click event by creating a button.
 		print('right click')
-		local button = gui:button('click', {love.mouse.getX() - this.pos.x, love.mouse.getY() - this.pos.y, 128, gui.style.unit}, this) -- this new button's parent will be the calling element
+		local button = gui:button('click', {love.mouse.getX() - this.pos.x, love.mouse.getY() - this.pos.y, 128, gui.style.unit}, this) -- button's parent will be the calling element
 		button.click = function(this) -- temp button responds to click before being removed
 			print('I\'ll be back!')
 			gui:rem(this)
 		end
 	end
-	group2.catch = function(this, ball) -- respond when an element is dragged and then dropped on the element by telling us what you caught
+	group2.catch = function(this, ball) -- respond when an element is dragged and then dropped on this element
 		print('caught '..ball.type)
 	end
 	-- scrollgroup within group (a scrollgroup's children will all scroll)
-	scrollgroup = gui:scrollgroup(nil, {0, gui.style.unit, 128, 256}, group2) -- create a scrollgroup(label, position, optional parent). will create its own scrollbar, although you can create independent scrollbars
+	scrollgroup = gui:scrollgroup(nil, {0, gui.style.unit, 128, 256}, group2) -- scrollgroup(label, pos, optional parent). will create its own scrollbar
 	scrollgroup.scroller.tip = 'scroll (mouse or wheel)' -- scrollgroup.scroller is the scrollbar
 	scrollgroup.scroller.drop = function(this)
-		print('scroll '..this.values.current..' / '..this.values.min..' - '..this.values.max) -- a scrollbar's values are min, max, current, step
+		print('dropped at '..this.values.current..' / '..this.values.min..' - '..this.values.max)
 	end
 	-- text within scrollgroup
 	button = gui:button('button', {w = 64}, scrollgroup)
 	local str = 'Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'
 	for i = 1, 8 do
-		gui:text(str, {0, scrollgroup.maxh, 128, 0}, scrollgroup) -- adding these to scrollgroup, Gspot will take care of setting height
+		gui:text(str, {0, scrollgroup.maxh, 128, 0}, scrollgroup) -- adding these to scrollgroup, Gspot formats text and resizes the element to fit it, and sets scrollgroup.mahx and scrollgroup.scroller.values.max when adding to a scrollgroup
 	end
 	
 	-- additional scroll controls
-	button = gui:button('up', {128, 0, gui.style.unit, gui.style.unit}, group2) -- a small button attached to the scrollgroup's group
-	button.click = function(this) -- gui click event will decrement scrollbar.value.current by values.step, and the slider will go up a notch
-		local scroll = scrollgroup.scroller -- using our global scrollgroup reference to find its scrollbar
+	button = gui:button('up', {}, group2) -- a small button attached to the scrollgroup's group
+	button.click = function(this) -- decrement scrollgroup.scroller.values.current by scrollgroup.scroller.values.step, and the slider will go up a notch
+		local scroll = scrollgroup.scroller
 		scroll.values.current = math.max(scroll.values.min, scroll.values.current - scroll.values.step)
 		print('scrolling outside gui '..scroll.values.current..' / '..scroll.values.min..' - '..scroll.values.max)
 	end
@@ -166,84 +166,81 @@ love.load = function()
 	end
 	
 	-- input
-	input = gui:input('chat', {64, love.graphics.getHeight() - 32, 256, gui.style.unit}) -- create an input(label, position, optional parent)
-	input.keydelay = 500 -- these two are set by default for input elements, same as doing love.setKeyRepeat(element.keydelay, element.keyrepeat) gui will of course return you to your defined keyrepeat state when it loses focus
-	input.keyrepeat = 200 -- gui uses this as default keydelay value if not assigned as above. use element.keyrepeat = false disable repeating
-	input.done = function(this) -- input:done() is called when you hit enter while input has focus
+	input = gui:input('chat', {64, love.graphics.getHeight() - 32, 256, gui.style.unit}) -- input(label, pos, optional parent)
+	input.keydelay = 500 -- these two are set by default for input elements, same as doing love.setKeyRepeat(element.keydelay, element.keyrepeat) Gspot will of course return you to your defined keyrepeat state when it loses focus
+	input.keyrepeat = 200 -- gui uses keyrepeat as default keydelay value if not assigned as above. use element.keyrepeat = false to disable repeating
+	input.done = function(this) -- Gspot calls element:done() when you hit enter while it has focus
 		print('I say '..this.value)
-		this.value = '' -- clear input
-		this.Gspot:unfocus() -- every element has a reference to the gui instance which created it, and since we are overriding imput.done we need it to clear focus
+		this.value = ''
+		this.Gspot:unfocus() -- every element has a reference to the gui instance which created it, and since we are overriding input.done we need it to clear focus
 	end
 	-- Note : you probably don't want to override input's default keypress()
-	-- if you want to override input's default click(), be sure to include the following default focus behaviour, or the gui won't pass it any keyboard events
+	-- if you want to override input's default click(), include the following, or the gui won't pass it any keyboard events
 	-- this:focus()
 	button = gui:button('Speak', {input.pos.w + gui.style.unit, 0, 64, gui.style.unit}, input) -- attach a button
-	button.click = function(this) -- use click event
-		this.parent:done() --  to trigger the input's done() behaviour
+	button.click = function(this)
+		this.parent:done()
 	end
 	
 	-- custom gui element
 	gui.window = function(this, label, pos, parent) -- careful not to override existing element types, and remember we're inside the gui's scope now
-		local group = this:group(label, pos, parent) -- our window is based on a group
-		group.tip = 'drag, and right-click to create'
+		local group = this:group(label, pos, parent) -- our custom element should be based on an existing type
+		group.tip = 'drag, and right-click to spawn'
 		group.drag = true
-		local x = this:button('X', {x = group.pos.w - this.style.unit, y = 0, w = this.style.unit, h = this.style.unit}, group) -- with an added control
-		x.click = function(this) -- which responds to click
-			this.Gspot:rem(this.parent) -- and removes the window
-		end
-		group.rclick = function(this)
-			this.Gspot:window('more custom goodness', {love.mouse.getX(), love.mouse.getY(), 128, 64})
-		end
+		group.rclick = function(this) gui:window('more custom goodness', {love.mouse.getX(), love.mouse.getY(), 128, 64}) end -- window will spawn more windows
+		
+		local x = this:button('X', {x = group.pos.w - this.style.unit, y = 0, w = this.style.unit, h = this.style.unit}, group) -- adding a control
+		x.click = function(this) this.Gspot:rem(this.parent) end -- which removes the window
+		
 		return group -- return the element
 	end
-	window = gui:window('custom goodness', {256, 256, 128, 64}) -- create a window
+	window = gui:window('custom goodness', {256, 256, 128, 64}) -- now make one of our windows
 	
 	-- or if you feel so inclined
 	gui.mostbasic = function(this, label, pos, parent)
-		return this:add(gui:element('group', label, pos, parent)) -- gui.add() gives the element its required values and inheritance, adds it to the collection of elements, and returns the new element's id
-		-- type must be an existing type, or it won't work
+		local element = gui:element('group', label, pos, parent) -- Gspot:element(type, label, pos, parent) gives the element its required values and inheritance. type must be an existing type, or it won't work
+		return this:add(element) -- Gspot:add() adds it to Gspot.elements, and returns the new element
 	end
 	
 	--show, hide, and update
 	text = gui:text('Hit F1 to show/hide', {love.graphics.getWidth() - 128, gui.style.unit, 128, gui.style.unit}) -- a hint (see love.keypressed() below)
-	showhider = gui:group('Mouse Below', {love.graphics.getWidth() - 128, gui.style.unit * 2, 128, 64}) -- remember this
-	counter = gui:text('0', {0, gui.style.unit, 128, 0}, showhider) -- some contents
-	counter.count = 0 -- careful not to override element values
-	counter.update = function(this, dt) -- set an update function, which will be called every frame
-		if this.id == gui.mousein then -- this is how we know the mouse is over
+	showhider = gui:group('Mouse Below', {love.graphics.getWidth() - 128, gui.style.unit * 2, 128, 64})
+	counter = gui:text('0', {0, gui.style.unit, 128, 0}, showhider)
+	counter.count = 0
+	counter.update = function(this, dt) -- set an update function, which will be called every frame, unless we also specify element.updateinterval
+		if this.id == gui.mousein then -- check if the mouse is in
+			this.count = this.count + dt -- do stuff
+			if this.count > 1 then this.count = 0 end
 			this.label = this.count -- set the element's text to the counter value
 		end
-		this.count = this.count + dt -- do stuff
-		if this.count > 1 then this.count = 0 end
 	end
-	showhider:hide() -- display state will be propagated to children as long as they already exist
+	showhider:hide() -- display state will be propagated to children
 end
 
 love.update = function(dt)
-	gui:update(dt) -- triggers everything - very important
+	gui:update(dt)
 end
 
 love.draw = function()
 	local bg = 'ÖBEY'
 	love.graphics.print(bg, 0, 240, math.pi / 4, 1, 1)-- draw some stuff under the gui
 	
-	gui:draw() -- draw the gui, or another one, or several, but they will all need mouse events etc, and if they overlap they will all respond, disregarding draw order
+	gui:draw()
 	
 	love.graphics.print(bg, 320, 240, math.pi / 4, 1, 1)-- or on top
 end
 
 love.keypressed = function(key, code)
 	if key == 'return' and gui.focus ~= input then -- binding enter key to input focus
-		input:focus() -- set focus to input
+		input:focus() -- give the input element focus so it can accept keyboard input
 	elseif key == 'f1' then -- toggle show-hider
 		if showhider.display then
 			showhider:hide()
 		else
 			showhider:show()
 		end
-	else
-		gui:keypress(key, code) -- if you don't want text input, you don't need this
 	end
+	gui:keypress(key, code) -- if you don't want text input, you don't need this
 end
 
 love.mousepressed = function(x, y, button)
