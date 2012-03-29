@@ -1,8 +1,7 @@
 Gspöt - a stateful GUI lib for LÖVE
 
 Notes :
-- Work on migrating docs to the wiki is nearing completion, but there may still be some undocumented features.
-- See issues
+- Documentation is currently out of date, as work on documenting new features is in progress.
 
 Files :
 - Gspot.lua : the lib's only required file
