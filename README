@@ -11,12 +11,12 @@ Files :
 - /Gewter : a super awesome platform shooter, made using an outdated version of Gspot as a game engine. I haven't gotten around to updating yet.
 
 Aims :
-- easily implemented GUI elements for game menus and other interfaces
+- easily implemented GUI elements for games and menus
 - flexibility
 - visual consistency
 
 What it does :
-- range of one-line GUI elements, with default functionality and manipulation functions
+- range of one-line GUI elements, with default functionality and utility functions
 - callbacks for a wide variety of events
 - element grouping and relative positioning
 - cascading element styles
