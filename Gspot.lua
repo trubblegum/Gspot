@@ -190,14 +190,14 @@ local Gspot = {
 	end,
 
 	rem = function(this, element)
-		if element.parent then table.remove(element.parent.children, this.getindex(element.parent.children, element)) end
+		if element.parent then element.parent:remchild(element) end
 		while #element.children > 0 do
 			for i, child in ipairs(element.children) do this:rem(child) end
 		end
 		if element == this.mousein then this.mousein = nil end
 		if element == this.drag then this.drag = nil end
 		if element == this.focus then this:unfocus() end
-		table.remove(this.elements, this.getindex(this.elements, element))
+		return table.remove(this.elements, this.getindex(this.elements, element))
 	end,
 	
 	setfocus = function(this, element)
@@ -714,6 +714,10 @@ Gspot.scroll = {
 		else love.graphics.setColor(this.style.hilite) end
 		handlepos = this.Gspot:pos({x = pos.x, y = math.min(pos.y + (pos.h - this.style.unit), math.max(pos.y, pos.y + (pos.h * (this.values.current / (this.values.max - this.values.min))) - (this.style.unit / 2))), r = pos.r})
 		this:drawshape(handlepos)
+		if this.label then
+			love.graphics.setColor(this.style.fg)
+			love.graphics.print(this.label, pos.x + ((pos.w - this.style.font:getWidth(this.label)) / 2), (pos.y + pos.h) + ((this.style.unit - this.style.font:getHeight('dp')) / 2))
+		end
 	end,
 }
 setmetatable(Gspot.scroll, {__index = Gspot.util, __call = Gspot.scroll.load})
