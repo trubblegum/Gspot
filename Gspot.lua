@@ -763,9 +763,8 @@ setmetatable(Gspot.radius, {__index = Gspot.util, __call = Gspot.radius.load})
 
 Gspot.feedback = {
 	load = function(this, Gspot, label, pos, parent, autopos)
-		if autopos == false then else autopos = true end
 		pos = pos or {}
-		if (not pos.y) and (not pos[2]) then
+		if (autopos == false and false) or true then
 			for i, element in ipairs(Gspot.elements) do
 				if element.elementtype == 'feedback' and element.autopos then element.pos.y = element.pos.y + element.style.unit end
 			end
