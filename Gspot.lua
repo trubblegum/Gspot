@@ -54,16 +54,13 @@ local Gspot = {
 				end
 			end
 			for i, bucket in ipairs(this.elements) do
-				if bucket ~= element then
-					if bucket:containspoint(mouse) then this.mouseover = bucket end
-				end
+				if bucket ~= element and bucket:containspoint(mouse) then this.mouseover = bucket end
 			end
 		end
 		for i, element in ipairs(this.elements) do
 			if element.display then
 				if element.update then
 					if element.updateinterval then
-						element.dt = element.dt or 0
 						element.dt = element.dt + dt
 						if element.dt >= element.updateinterval then
 							element.dt = 0
@@ -72,8 +69,8 @@ local Gspot = {
 					else element:update(dt) end
 				end
 				if element:containspoint(mouse) then
-					if element.parent and element.parent.elementtype == 'scrollgroup' and element ~= element.parent.scroller then
-						if this.util.withinrect(mouse, element.parent:getpos()) then this.mousein = element end
+					if element.parent and element.parent:type() == 'Gspot.element.scrollgroup' and element ~= element.parent.scrollv and element ~= element.parent.scrollh then
+						if element.parent:containspoint(mouse) then this.mousein = element end
 					else this.mousein = element end
 				end
 			end
@@ -361,9 +358,10 @@ Gspot.util = {
 		if this.parent then
 			ppos, scissor = this.parent:getpos()
 			pos = pos + ppos
-			if this.parent:type() == 'Gspot.element.scrollgroup' and this ~= this.parent.scroller then
+			if this.parent:type() == 'Gspot.element.scrollgroup' and this ~= this.parent.scrollv and  this ~= this.parent.scrollh then
 				scissor = this.Gspot:clone(this.parent:getpos())
-				pos.y = pos.y - this.parent.scroller.values.current
+				if this.parent.scrollv then pos.y = pos.y - this.parent.scrollv.values.current end
+				if this.parent.scrollh then pos.x = pos.x - this.parent.scrollh.values.current end
 			end
 		end
 		return pos, scissor
@@ -371,8 +369,7 @@ Gspot.util = {
 	
 	containspoint = function(this, point)
 		local pos = point.pos or point
-		if this.shape == 'circle' then
-			if this.withinradius(pos, this:getpos() + this.pos.r) then return true end
+		if this.shape == 'circle' and this.withinradius(pos, this:getpos() + this.pos.r) then return true
 		elseif this.withinrect(pos, this:getpos()) then return true end
 		return false
 	end,
@@ -402,20 +399,43 @@ Gspot.util = {
 		else return this end
 	end,
 	
+	getmaxw = function(this)
+		local maxw = 0
+		for i, child in ipairs(this.children) do
+			if (child ~= this.scrollv and child ~= this.scrollh) and child.pos.x + child.pos.w > maxw then maxw = child.pos.x + child.pos.w end
+		end
+		return maxw
+	end,
+	
 	getmaxh = function(this)
 		local maxh = 0
 		for i, child in ipairs(this.children) do
-			if child ~= this.scroller and child.pos.y + child.pos.h > maxh then maxh = child.pos.y + child.pos.h end
+			if (child ~= this.scrollv and child ~= this.scrollh) and child.pos.y + child.pos.h > maxh then maxh = child.pos.y + child.pos.h end
 		end
 		return maxh
 	end,
 	
 	addchild = function(this, child, autostack)
 		if autostack then
-			local maxh = this:getmaxh()
-			child.pos.y = maxh
-			if this.scroller then this.scroller.values.max = math.max(maxh - this.pos.h, 0) end
+			if type(autostack) == 'number' or autostack == 'grid' then 
+				local limitx = (type(autostack) == 'number' and autostack) or this.pos.w
+				local maxx, maxy = 0, 0
+				for i, element in ipairs(this.children) do
+					if element ~= this.scrollh and element ~= this.scrollv then
+						if element.pos.y > maxy then maxy = element.pos.y end
+						if element.pos.x + element.pos.w + child.pos.w <= limitx then maxx = element.pos.x + element.pos.w
+						else maxx, maxy = 0, element.pos.y + element.pos.h end
+					end
+				end
+				child.pos.x, child.pos.y = maxx, maxy
+			else
+				if autostack ~= 'vertical' then child.pos.x = this:getmaxw() end
+				if autostack ~= 'horizontal' then child.pos.y = this:getmaxh() end
+			end
 		end
+		if this.scrollh then this.scrollh.values.max = math.max(this:getmaxw() - this.pos.w, 0) end
+		if this.scrollv then this.scrollv.values.max = math.max(this:getmaxh() - this.pos.h, 0) end
+		
 		table.insert(this.children, child)
 		child.parent = this
 		child.style = this.Gspot:clone(child.style)
@@ -428,6 +448,11 @@ Gspot.util = {
 		table.remove(this.children, this.Gspot.getindex(this.children, child))
 		child.parent = nil
 		setmetatable(child.style, {__index = this.Gspot.style})
+	end,
+	
+	replace = function(this, replacement)
+		this.Gspot.elements[this.Gspot.getindex(this.Gspot.elements, this)] = replacement
+		return replacement
 	end,
 	
 	getlevel = function(this)
@@ -472,7 +497,7 @@ Gspot.element = {
 		assert(type(pos) == 'table' or not pos, 'invalid element constructor argument : element.pos must be of type table or nil')
 		assert((type(parent) == 'table' and parent:type():sub(1, 13) == 'Gspot.element') or not parent, 'invalid element constructor argument : element.parent must be of type element or nil')
 		local pos, circ = Gspot:pos(pos)
-		local element = {elementtype = elementtype, label = label, pos = pos, display = true, parent = parent, children = {}, Gspot = Gspot}
+		local element = {elementtype = elementtype, label = label, pos = pos, display = true, dt = 0, parent = parent, children = {}, Gspot = Gspot}
 		if element.label == '' then element.label = element.label or ' ' end
 		if circ then element.shape = 'circle' else element.shape = 'box' end
 		if parent then element.style = setmetatable({}, {__index = parent.style})
@@ -488,6 +513,7 @@ Gspot.scrollvalues = function(this, values)
 	val.max = values.max or values[2] or 0
 	val.current = values.current or values[3] or val.min
 	val.step = values.step or values[4] or this.style.unit
+	val.axis = values.axis or values[5] or 'vertical'
 	return val
 end
 
@@ -531,6 +557,20 @@ Gspot.text = {
 	end,
 }
 setmetatable(Gspot.text, {__index = Gspot.util, __call = Gspot.text.load})
+
+Gspot.typetext = {
+	load = function(this, Gspot, label, pos, parent, autosize)
+		local element = Gspot:text('', pos, parent, autosize)
+		element.values = {text = label, cursor = 1}
+		element.updateinterval = 0.1
+		element.update = function(this, dt)
+			this.values.cursor = this.values.cursor + 1
+			this.label = this.values.text:sub(1, this.values.cursor)
+		end
+		return Gspot:add(element)
+	end,
+}
+setmetatable(Gspot.typetext, {__index = Gspot.util, __call = Gspot.typetext.load})
 
 Gspot.image = {
 	load = function(this, Gspot, label, pos, parent, img)
@@ -692,19 +732,19 @@ Gspot.input = {
 setmetatable(Gspot.input, {__index = Gspot.util, __call = Gspot.input.load})
 
 Gspot.scroll = {
-	load = function(this, Gspot, label, pos, parent, values, setscoller)
+	load = function(this, Gspot, label, pos, parent, values)
 		local element = Gspot:element('scroll', label, pos, parent)
 		element.values = Gspot:scrollvalues(values)
 		element.wheelup = function(this) this.values.current = math.max(this.values.current - this.values.step, this.values.min) end
 		element.wheeldown = function(this) this.values.current = math.min(this.values.current + this.values.step, this.values.max) end
-		return Gspot:add(element, setscroller)
+		return Gspot:add(element)
 	end,
 	update = function(this, dt)
 		if this.withinrect({x = love.mouse.getX(), y = love.mouse.getY()}, this:getpos()) then this.Gspot.mousein = this end
 	end,
 	drag = function(this, x, y)
 		local pos = this:getpos()
-		this.values.current = this.values.min + ((this.values.max - this.values.min) * ((math.min(math.max(pos.y, y), (pos.y + pos.h)) - pos.y) / pos.h))
+		this.values.current = this.values.min + ((this.values.max - this.values.min) * ((this.values.axis == 'vertical' and ((math.min(math.max(pos.y, y), (pos.y + pos.h)) - pos.y) / pos.h)) or ((math.min(math.max(pos.x, x), (pos.x + pos.w)) - pos.x) / pos.w)))
 	end,
 	draw = function(this, pos)
 		if this == this.Gspot.mousein or this == this.Gspot.drag then love.graphics.setColor(this.style.default)
@@ -712,7 +752,7 @@ Gspot.scroll = {
 		this:rect(pos)
 		if this == this.Gspot.mousein or this == this.Gspot.drag then love.graphics.setColor(this.style.fg)
 		else love.graphics.setColor(this.style.hilite) end
-		handlepos = this.Gspot:pos({x = pos.x, y = math.min(pos.y + (pos.h - this.style.unit), math.max(pos.y, pos.y + (pos.h * (this.values.current / (this.values.max - this.values.min))) - (this.style.unit / 2))), r = pos.r})
+		handlepos = this.Gspot:pos({x = (this.values.axis == 'horizontal' and math.min(pos.x + (pos.w - this.style.unit), math.max(pos.x, pos.x + (pos.w * (this.values.current / (this.values.max - this.values.min))) - (this.style.unit / 2)))) or pos.x, y = (this.values.axis == 'vertical' and math.min(pos.y + (pos.h - this.style.unit), math.max(pos.y, pos.y + (pos.h * (this.values.current / (this.values.max - this.values.min))) - (this.style.unit / 2)))) or pos.y, w = this.style.unit, h = this.style.unit, r = pos.r})
 		this:drawshape(handlepos)
 		if this.label then
 			love.graphics.setColor(this.style.fg)
@@ -723,11 +763,13 @@ Gspot.scroll = {
 setmetatable(Gspot.scroll, {__index = Gspot.util, __call = Gspot.scroll.load})
 
 Gspot.scrollgroup = {
-	load = function(this, Gspot, label, pos, parent)
+	load = function(this, Gspot, label, pos, parent, axis)
+		axis = axis or 'both'
 		local element = Gspot:element('scrollgroup', label, pos, parent)
 		element.maxh = 0
 		element = Gspot:add(element)
-		this.scroller = Gspot:scroll(nil, {x = element.pos.w, y = 0, w = element.style.unit, h = element.pos.h}, element, {min = 0, max = 0, current = 0, step = element.style.unit})
+		if axis ~= 'horizontal' then this.scrollv = Gspot:scroll(nil, {x = element.pos.w, y = 0, w = element.style.unit, h = element.pos.h}, element, {0, 0, 0, element.style.unit, 'vertical'}) end
+		if axis ~= 'vertical' then this.scrollh = Gspot:scroll(nil, {x = 0, y = element.pos.h, w = element.pos.w, h = element.style.unit}, element, {0, 0, 0, element.style.unit, 'horizontal'}) end
 		return element
 	end,
 	draw = function(this, pos)
@@ -764,7 +806,8 @@ setmetatable(Gspot.radius, {__index = Gspot.util, __call = Gspot.radius.load})
 Gspot.feedback = {
 	load = function(this, Gspot, label, pos, parent, autopos)
 		pos = pos or {}
-		if (autopos == false and false) or true then
+		autopos = (autopos == nil and true) or autopos
+		if autopos then
 			for i, element in ipairs(Gspot.elements) do
 				if element.elementtype == 'feedback' and element.autopos then element.pos.y = element.pos.y + element.style.unit end
 			end
@@ -795,5 +838,45 @@ Gspot.feedback = {
 	end,
 }
 setmetatable(Gspot.feedback, {__index = Gspot.util, __call = Gspot.feedback.load})
+
+Gspot.progress = {
+	load = function(this, Gspot, label, pos, parent)
+		element = Gspot:add(Gspot:element('progress', label, pos, parent))
+		element.loaders = {}
+		element.values = Gspot.scrollvalues(element, {0, 0, 0, 1})
+		return element
+	end,
+	update = function(this, dt)
+		for i, loader in ipairs(this.loaders) do
+			if loader.status == 'waiting' then
+				local success, result = pcall(function(loader) return loader.func() end, loader)
+				loader.status = (success and 'done') or error
+				loader.result = result
+				this.values.current = this.values.current + 1
+				break
+			end
+			if i == #this.loaders then this:done() end
+		end
+	end,
+	draw = function(this, pos)
+		love.graphics.setColor(this.style.default)
+		this:drawshape(pos)
+		love.graphics.setColor(this.style.fg)
+		this:rect({x = pos.x, y = pos.y, w = pos.w * (this.values.current / this.values.max), h = pos.h})
+		if this.label then
+			love.graphics.setColor(this.style.fg)
+			love.graphics.print(this.label, pos.x - ((this.style.unit / 2) + this.style.font:getWidth(this.label)), pos.y + ((this.pos.h - this.style.font:getHeight('dp')) / 2))
+		end
+	end,
+	done = function(this)
+		this.Gspot:rem(this)
+	end,
+	add = function(this, loader)
+		table.insert(this.loaders, {status = 'waiting', func = loader})
+		this.values.max = this.values.max + 1
+	end,
+}
+setmetatable(Gspot.progress, {__index = Gspot.util, __call = Gspot.progress.load})
+
 
 return Gspot:load()

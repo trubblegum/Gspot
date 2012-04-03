@@ -1,14 +1,13 @@
 Gspöt - a stateful GUI lib for LÖVE
 
 Notes :
-- Documentation is currently out of date, as work on documenting new features is in progress.
+- Documentation is currently out of date, but demo code is commented, and should provide enough detail to get by. Wiki will be updates asap.
 
 Files :
 - Gspot.lua : the lib's only required file
-- main.lua : commented demo -- may contain invalid assertions, due to recent changes
+- main.lua : commented demo
 - conf.lua : LÖVE config for demo
 - img.png : example image
-- /Gewter : a super awesome platform shooter, made using an outdated version of Gspot as a game engine. I haven't gotten around to updating yet.
 
 Aims :
 - easily implemented GUI elements for games and menus
