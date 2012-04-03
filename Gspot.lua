@@ -428,10 +428,8 @@ Gspot.util = {
 					end
 				end
 				child.pos.x, child.pos.y = maxx, maxy
-			else
-				if autostack ~= 'vertical' then child.pos.x = this:getmaxw() end
-				if autostack ~= 'horizontal' then child.pos.y = this:getmaxh() end
-			end
+			elseif autostack == 'horizontal' then child.pos.x = this:getmaxw() end
+			elseif autostack == 'vertical' then child.pos.y = this:getmaxh() end
 		end
 		if this.scrollh then this.scrollh.values.max = math.max(this:getmaxw() - this.pos.w, 0) end
 		if this.scrollv then this.scrollv.values.max = math.max(this:getmaxh() - this.pos.h, 0) end
