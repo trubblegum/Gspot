@@ -16,14 +16,14 @@ love.load = function()
 	
 	-- button
 	local button = gui:button('A Button', {x = 128, y = gui.style.unit, w = 128, h = gui.style.unit}) -- a button(label, pos, optional parent) gui.style.unit is a standard gui unit (default 16), used to keep the interface tidy
-	button.click = function(this) -- set element:click() to make it respond to gui's click event
+	button.click = function(this, x, y) -- set element:click() to make it respond to gui's click event
 		gui:feedback('Clicky')
 	end
 	
 	-- image
 	local image = gui:image('An Image', {160, 32, 0, 0}, nil, 'img.png') -- an image(label, pos, parent, love.image or path)
-	image.click = function(this)
-		gui:feedback('Clicky clicky')
+	image.click = function(this, x, y)
+		gui:feedback(tostring(this.pos))
 	end
 	image.enter = function(this) this.Gspot:feedback("I'm In!") end -- every element has a reference to the gui instance which created it
 	image.leave = function(this) this.Gspot:feedback("I'm Out!") end
@@ -33,7 +33,7 @@ love.load = function()
 	hidden.tip = "Can't see me, but I still respond"
 	
 	-- elements' children will be positioned relative to their parent's position
-	group1 = gui:group('Group 1', {gui.style.unit, gui.style.unit * 3, 128, gui.style.unit}) -- group(label, pos, optional parent)
+	group1 = gui:collapsegroup('Group 1', {gui.style.unit, gui.style.unit * 3, 128, gui.style.unit}) -- group(label, pos, optional parent)
 	group1.style.fg = {255, 192, 0, 255}
 	group1.tip = 'Drag and drop' -- add a tooltip
 	group1.drag = true -- respond to default drag behaviour
@@ -79,7 +79,6 @@ love.load = function()
 	end
 	local checkboxlabel = gui:text('check', {x = 16}, checkbox, true) -- using the autosize flag to resize the element's width to fit the text
 	checkboxlabel.click = function(this, x, y)
-		gui:feedback(tostring(this.pos))
 		this.parent:click()
 	end
 	

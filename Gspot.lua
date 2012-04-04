@@ -428,7 +428,7 @@ Gspot.util = {
 					end
 				end
 				child.pos.x, child.pos.y = maxx, maxy
-			elseif autostack == 'horizontal' then child.pos.x = this:getmaxw() end
+			elseif autostack == 'horizontal' then child.pos.x = this:getmaxw()
 			elseif autostack == 'vertical' then child.pos.y = this:getmaxh() end
 		end
 		if this.scrollh then this.scrollh.values.max = math.max(this:getmaxw() - this.pos.w, 0) end
@@ -531,6 +531,30 @@ Gspot.group = {
 	end,
 }
 setmetatable(Gspot.group, {__index = Gspot.util, __call = Gspot.group.load})
+
+Gspot.collapsegroup = {
+	load = function(this, Gspot, label, pos, parent)
+		local element = Gspot:group(label, pos, parent)
+		element.view = true
+		element.orig = Gspot:clone(element.pos)
+		element.toggle = function(this)
+			this.view = not element.view
+			this.pos.h = (this.view and this.orig.h) or this.style.unit
+			for i, child in ipairs(this.children) do
+				if child ~= this.control then
+					if this.view then child:show() else child:hide() end
+				end
+			end
+			this.control.label = (this.view and '-') or '='
+		end
+		element.control = Gspot:button('-', {element.pos.w - element.style.unit}, element)
+		element.control.click = function(this)
+			this.parent:toggle()
+		end
+		return element
+	end,
+}
+setmetatable(Gspot.collapsegroup, {__index = Gspot.util, __call = Gspot.collapsegroup.load})
 
 Gspot.text = {
 	load = function(this, Gspot, label, pos, parent, autosize)
