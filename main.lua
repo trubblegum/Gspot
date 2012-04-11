@@ -7,8 +7,7 @@ love.load = function()
 	
 	love.keyboard.setKeyRepeat(500, 250)
 	love.graphics.setFont(font)
-	--love.graphics.setColor(64, 32, 0, 128) -- just setting these so we know the gui isn't stealing our thunder
-	love.graphics.setColor(0, 32, 32, 128)
+	love.graphics.setColor(255, 192, 0, 128) -- just setting these so we know the gui isn't stealing our thunder
 	
 	sometext = 'Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'
 	
@@ -166,7 +165,7 @@ love.update = function(dt)
 end
 
 love.draw = function()
-	local bg = 'ÖBEY'
+	local bg = 'OBEY'
 	love.graphics.print(bg, 0, 240, math.pi / 4, 1, 1)
 	
 	gui:draw()

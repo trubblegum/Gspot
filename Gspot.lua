@@ -4,217 +4,230 @@
 -- 2. Altered source versions must be plainly marked as such, and must not be misrepresented as being the original software.
 -- 3. This notice may not be removed or altered from any source distribution.
 
-local Gspot = {
-	load = function(this)
-		local def = {
-			style = {
-				unit = 16,
-				font = love.graphics.newFont(10),
-				imagemode = 'replace',
-				fg = {224, 224, 224, 255},
-				bg = {32, 32, 32, 255},
-				default = {96, 96, 96, 255},
-				hilite = {128, 128, 128, 255},
-				focus = {160, 160, 160, 255},
-			},
-			dblclickinterval = 0.25,
-			-- no messin' past here
-			maxid = 0, -- legacy
-			mem = {},
-			elements = {},
-			mousein = nil,
-			focus = nil,
-			drag = nil,
-			mousedt = 0,
-			orepeat = {},
-		}
-		return setmetatable(def, {__index = this, __call = this.load})
-	end,
-	
-	update = function(this, dt)
-		this.mousedt = this.mousedt + dt
-		local mouse = {}
-		mouse.x, mouse.y = love.mouse.getPosition()
-		local mousein = this.mousein
-		this.mousein = false
-		this.mouseover = false
-		if this.drag then
-			local element = this.drag
-			if love.mouse.isDown('l') then
-				if type(element.drag) == 'function' then element:drag(mouse.x, mouse.y)
-				else
-					element.pos.y = mouse.y - element.offset.y
-					element.pos.x = mouse.x - element.offset.x
-				end
-			elseif love.mouse.isDown('r') then
-				if type(element.rdrag) == 'function' then element:rdrag(mouse.x, mouse.y)
-				else
-					element.pos.y = mouse.y - element.offset.y
-					element.pos.x = mouse.x - element.offset.x
-				end
-			end
-			for i, bucket in ipairs(this.elements) do
-				if bucket ~= element and bucket:containspoint(mouse) then this.mouseover = bucket end
-			end
-		end
-		for i, element in ipairs(this.elements) do
-			if element.display then
-				if element.update then
-					if element.updateinterval then
-						element.dt = element.dt + dt
-						if element.dt >= element.updateinterval then
-							element.dt = 0
-							element:update(dt)
-						end
-					else element:update(dt) end
-				end
-				if element:containspoint(mouse) then
-					if element.parent and element.parent:type() == 'Gspot.element.scrollgroup' and element ~= element.parent.scrollv and element ~= element.parent.scrollh then
-						if element.parent:containspoint(mouse) then this.mousein = element end
-					else this.mousein = element end
-				end
-			end
-		end
-		if this.mousein ~= mousein then
-			if this.mousein and this.mousein.enter then this.mousein:enter() end
-			if mousein and mousein.leave then mousein:leave() end
-		end
-	end,
-	
-	draw = function(this)
-		local mouse = {}
-		mouse.x, mouse.y = love.mouse.getPosition()
-		local ostyle = {}
-		ostyle.colormode = love.graphics.getColorMode()
-		ostyle.font = love.graphics.getFont()
-		ostyle.r, ostyle.g, ostyle.b, ostyle.a = love.graphics.getColor()
-		ostyle.scissor = {}
-		ostyle.scissor.x, ostyle.scissor.y, ostyle.scissor.w, ostyle.scissor.h = love.graphics.getScissor()
-		love.graphics.setColorMode('modulate')
-		for i, element in ipairs(this.elements) do
-			if element.display then
-				local pos, scissor = element:getpos()
-				if scissor then love.graphics.setScissor(scissor.x, scissor.y, scissor.w, scissor.h) end
-				love.graphics.setFont(element.style.font)
-				element:draw(pos)
-				if ostyle.scissor.x then love.graphics.setScissor(ostyle.scissor.x, ostyle.scissor.y, ostyle.scissor.w, ostyle.scissor.h)
-				else love.graphics.setScissor() end
-			end
-		end
-		if this.mousein and this.mousein.tip then
-			local element = this.mousein
-			local pos = element:getpos()
-			local tippos = {x = pos.x + (this.style.unit / 2), y = pos.y + (this.style.unit / 2), w = element.style.font:getWidth(element.tip) + this.style.unit, h = this.style.unit}
-			love.graphics.setColor(this.style.bg)
-			this.mousein:rect({x = math.max(0, math.min(tippos.x, love.graphics.getWidth() - (element.style.font:getWidth(element.tip) + this.style.unit))), y = math.max(0, math.min(tippos.y, love.graphics.getHeight() - this.style.unit)), w = tippos.w, h = tippos.h})
-			love.graphics.setColor(this.style.fg)
-			love.graphics.print(element.tip, math.max(this.style.unit / 2, math.min(tippos.x + (this.style.unit / 2), love.graphics.getWidth() - (element.style.font:getWidth(element.tip) + (this.style.unit / 2)))), math.max((this.style.unit - element.style.font:getHeight(element.tip)) / 2, math.min(tippos.y + ((this.style.unit - element.style.font:getHeight('dp')) / 2), (love.graphics.getHeight() - this.style.unit) + ((this.style.unit - element.style.font:getHeight('dp')) / 2))))
-		end
-		love.graphics.setFont(ostyle.font)
-		love.graphics.setColor(ostyle.r, ostyle.g, ostyle.b, ostyle.a)
-		love.graphics.setColorMode(ostyle.colormode)
-		if ostyle.scissor.x then love.graphics.setScissor(ostyle.scissor.x, ostyle.scissor.y, ostyle.scissor.w, ostyle.scissor.h)
-		else love.graphics.setScissor() end
-	end,
-	
-	mousepress = function(this, x, y, button, dt)
-		this:unfocus()
-		if this.mousein then
-			local element = this.mousein
-			if element.elementtype ~= 'hidden' then element:getparent():setlevel() end
-			if element.drag then
-				this.drag = element
-				element.offset = {x = x - element:getpos().x, y = y - element:getpos().y}
-			end
-			if button == 'l' then
-				if this.mousedt < this.dblclickinterval and element.dblclick then element:dblclick(x, y, button)
-				elseif element.click then element:click(x, y)end
-			elseif button == 'r' and element.rclick then element:rclick(x, y)
-			elseif button == 'wu' and element.wheelup then element:wheelup(x, y)
-			elseif button == 'wd' and element.wheeldown then element:wheeldown(x, y)
-			end
-		end
-		this.mousedt = 0
-	end,
+local Gspot = {}
 
-	mouserelease = function(this, x, y, button)
-		if this.drag then
-			local element = this.drag
-			if button == 'l' then
-				if element.drop then element:drop(this.mouseover) end
-				if this.mouseover and this.mouseover.catch then this.mouseover:catch(element) end
-			elseif button == 'r' then
-				if element.rdrop then element:rdrop(this.mouseover) end
-				if this.mouseover and this.mouseover.rcatch then this.mouseover:rcatch(element.id) end
-			end
-		end
-		this.drag = nil
-	end,
-
-	keypress = function(this, key, code)
-		if this.focus then
-			if key == 'return' and this.focus.done then this.focus:done() end
-			if this.focus and this.focus.keypress then this.focus:keypress(key, code) end
-		end
-	end,
-	
-	-- legacy
-	newid = function(this)
-		this.maxid = this.maxid + 1
-		return this.maxid
-	end,
-	-- /legacy
-	
-	clone = function(this, t)
-		local c = {}
-		for i, v in pairs(t) do
-			if v then
-				if type(v) == 'table' then c[i] = this:clone(v) else c[i] = v end
-			end
-		end
-		return setmetatable(c, getmetatable(t))
-	end,
-	
-	getindex = function(tab, val)
-		for i, v in pairs(tab) do if v == val then return i end end
-	end,
-	
-	add = function(this, element)
-		element.id = this:newid() -- legacy
-		table.insert(this.elements, element)
-		if element.parent then element.parent:addchild(element) end
-		return element
-	end,
-
-	rem = function(this, element)
-		if element.parent then element.parent:remchild(element) end
-		while #element.children > 0 do
-			for i, child in ipairs(element.children) do this:rem(child) end
-		end
-		if element == this.mousein then this.mousein = nil end
-		if element == this.drag then this.drag = nil end
-		if element == this.focus then this:unfocus() end
-		return table.remove(this.elements, this.getindex(this.elements, element))
-	end,
-	
-	setfocus = function(this, element)
-		if element then
-			this.focus = element
-			if element.keyrepeat and element.keyrepeat > 0 then
-				this.orepeat.delay, this.orepeat.interval = love.keyboard.getKeyRepeat()
-				if element.keydelay then love.keyboard.setKeyRepeat(element.keydelay, element.keyrepeat)
-				else love.keyboard.setKeyRepeat(element.keyrepeat, element.keyrepeat) end
-			end
-		end
-	end,
-	
-	unfocus = function(this)
-		this.focus = nil
-		if this.orepeat then love.keyboard.setKeyRepeat(this.orepeat.delay, this.orepeat.interval) end
-	end,
+Gspot.style = {
+	unit = 16,
+	font = love.graphics.newFont(10),
+	imagemode = 'replace',
+	fg = {255, 255, 255, 255},
+	bg = {64, 64, 64, 255},
+	default = {96, 96, 96, 255},
+	hilite = {128, 128, 128, 255},
+	focus = {160, 160, 160, 255},
 }
 
-Gspot.pos = {
+Gspot.load = function(this)
+	local def = {
+		style = {
+			unit = this.style.unit,
+			font = this.style.font,
+			imagemode = this.style.imagemode,
+			fg = this.style.fg,
+			bg = this.style.bg,
+			default = this.style.default,
+			hilite = this.style.hilite,
+			focus = this.style.focus,
+		},
+		dblclickinterval = 0.25,
+		-- no messin' past here
+		maxid = 0, -- legacy
+		mem = {},
+		elements = {},
+		mousein = nil,
+		focus = nil,
+		drag = nil,
+		mousedt = 0,
+		orepeat = {},
+	}
+	return setmetatable(def, {__index = this, __call = this.load})
+end
+
+Gspot.update = function(this, dt)
+	this.mousedt = this.mousedt + dt
+	local mouse = {}
+	mouse.x, mouse.y = this:getmouse()
+	local mousein = this.mousein
+	this.mousein = false
+	this.mouseover = false
+	if this.drag then
+		local element = this.drag
+		if love.mouse.isDown('l') then
+			if type(element.drag) == 'function' then element:drag(mouse.x, mouse.y)
+			else
+				element.pos.y = mouse.y - element.offset.y
+				element.pos.x = mouse.x - element.offset.x
+			end
+		elseif love.mouse.isDown('r') then
+			if type(element.rdrag) == 'function' then element:rdrag(mouse.x, mouse.y)
+			else
+				element.pos.y = mouse.y - element.offset.y
+				element.pos.x = mouse.x - element.offset.x
+			end
+		end
+		for i, bucket in ipairs(this.elements) do
+			if bucket ~= element and bucket:containspoint(mouse) then this.mouseover = bucket end
+		end
+	end
+	for i, element in ipairs(this.elements) do
+		if element.display then
+			if element.update then
+				if element.updateinterval then
+					element.dt = element.dt + dt
+					if element.dt >= element.updateinterval then
+						element.dt = 0
+						element:update(dt)
+					end
+				else element:update(dt) end
+			end
+			if element:containspoint(mouse) then
+				if element.parent and element.parent:type() == 'Gspot.element.scrollgroup' and element ~= element.parent.scrollv and element ~= element.parent.scrollh then
+					if element.parent:containspoint(mouse) then this.mousein = element end
+				else this.mousein = element end
+			end
+		end
+	end
+	if this.mousein ~= mousein then
+		if this.mousein and this.mousein.enter then this.mousein:enter() end
+		if mousein and mousein.leave then mousein:leave() end
+	end
+end
+
+Gspot.draw = function(this)
+	local ostyle = {}
+	ostyle.colormode = love.graphics.getColorMode()
+	ostyle.font = love.graphics.getFont()
+	ostyle.r, ostyle.g, ostyle.b, ostyle.a = love.graphics.getColor()
+	ostyle.scissor = {}
+	ostyle.scissor.x, ostyle.scissor.y, ostyle.scissor.w, ostyle.scissor.h = love.graphics.getScissor()
+	love.graphics.setColorMode('modulate')
+	for i, element in ipairs(this.elements) do
+		if element.display then
+			local pos, scissor = element:getpos()
+			if scissor then love.graphics.setScissor(scissor.x, scissor.y, scissor.w, scissor.h) end
+			love.graphics.setFont(element.style.font)
+			element:draw(pos)
+			if ostyle.scissor.x then love.graphics.setScissor(ostyle.scissor.x, ostyle.scissor.y, ostyle.scissor.w, ostyle.scissor.h)
+			else love.graphics.setScissor() end
+		end
+	end
+	if this.mousein and this.mousein.tip then
+		local element = this.mousein
+		local pos = element:getpos()
+		local tippos = {x = pos.x + (this.style.unit / 2), y = pos.y + (this.style.unit / 2), w = element.style.font:getWidth(element.tip) + this.style.unit, h = this.style.unit}
+		love.graphics.setColor(this.style.bg)
+		this.mousein:rect({x = math.max(0, math.min(tippos.x, love.graphics.getWidth() - (element.style.font:getWidth(element.tip) + this.style.unit))), y = math.max(0, math.min(tippos.y, love.graphics.getHeight() - this.style.unit)), w = tippos.w, h = tippos.h})
+		love.graphics.setColor(this.style.fg)
+		love.graphics.print(element.tip, math.max(this.style.unit / 2, math.min(tippos.x + (this.style.unit / 2), love.graphics.getWidth() - (element.style.font:getWidth(element.tip) + (this.style.unit / 2)))), math.max((this.style.unit - element.style.font:getHeight(element.tip)) / 2, math.min(tippos.y + ((this.style.unit - element.style.font:getHeight('dp')) / 2), (love.graphics.getHeight() - this.style.unit) + ((this.style.unit - element.style.font:getHeight('dp')) / 2))))
+	end
+	love.graphics.setFont(ostyle.font)
+	love.graphics.setColor(ostyle.r, ostyle.g, ostyle.b, ostyle.a)
+	love.graphics.setColorMode(ostyle.colormode)
+	if ostyle.scissor.x then love.graphics.setScissor(ostyle.scissor.x, ostyle.scissor.y, ostyle.scissor.w, ostyle.scissor.h)
+	else love.graphics.setScissor() end
+end
+
+Gspot.mousepress = function(this, x, y, button)
+	this:unfocus()
+	if this.mousein then
+		local element = this.mousein
+		if element.elementtype ~= 'hidden' then element:getparent():setlevel() end
+		if element.drag then
+			this.drag = element
+			element.offset = {x = x - element:getpos().x, y = y - element:getpos().y}
+		end
+		if button == 'l' then
+			if this.mousedt < this.dblclickinterval and element.dblclick then element:dblclick(x, y, button)
+			elseif element.click then element:click(x, y)end
+		elseif button == 'r' and element.rclick then element:rclick(x, y)
+		elseif button == 'wu' and element.wheelup then element:wheelup(x, y)
+		elseif button == 'wd' and element.wheeldown then element:wheeldown(x, y)
+		end
+	end
+	this.mousedt = 0
+end
+
+Gspot.mouserelease = function(this, x, y, button)
+	if this.drag then
+		local element = this.drag
+		if button == 'r' then
+			if element.rdrop then element:rdrop(this.mouseover) end
+			if this.mouseover and this.mouseover.rcatch then this.mouseover:rcatch(element.id) end
+		else
+			if element.drop then element:drop(this.mouseover) end
+			if this.mouseover and this.mouseover.catch then this.mouseover:catch(element) end
+		end
+	end
+	this.drag = nil
+end
+
+Gspot.keypress = function(this, key, code)
+	if this.focus then
+		if (key == 'return' or key == 'kpenter') and this.focus.done then this.focus:done() end
+		if this.focus and this.focus.keypress then this.focus:keypress(key, code) end
+	end
+end
+
+Gspot.getmouse = function(this)
+	return love.mouse.getPosition()
+end
+
+-- legacy
+Gspot.newid = function(this)
+	this.maxid = this.maxid + 1
+	return this.maxid
+end
+-- /legacy
+
+Gspot.clone = function(this, t)
+	local c = {}
+	for i, v in pairs(t) do
+		if v then
+			if type(v) == 'table' then c[i] = this:clone(v) else c[i] = v end
+		end
+	end
+	return setmetatable(c, getmetatable(t))
+end
+
+Gspot.getindex = function(tab, val)
+	for i, v in pairs(tab) do if v == val then return i end end
+end
+
+Gspot.add = function(this, element)
+	element.id = this:newid() -- legacy
+	table.insert(this.elements, element)
+	if element.parent then element.parent:addchild(element) end
+	return element
+end
+
+Gspot.rem = function(this, element)
+	if element.parent then element.parent:remchild(element) end
+	while #element.children > 0 do
+		for i, child in ipairs(element.children) do this:rem(child) end
+	end
+	if element == this.mousein then this.mousein = nil end
+	if element == this.drag then this.drag = nil end
+	if element == this.focus then this:unfocus() end
+	return table.remove(this.elements, this.getindex(this.elements, element))
+end
+
+Gspot.setfocus = function(this, element)
+	if element then
+		this.focus = element
+		if element.keyrepeat and element.keyrepeat > 0 then
+			this.orepeat.delay, this.orepeat.interval = love.keyboard.getKeyRepeat()
+			if element.keydelay then love.keyboard.setKeyRepeat(element.keydelay, element.keyrepeat)
+			else love.keyboard.setKeyRepeat(element.keyrepeat, element.keyrepeat) end
+		end
+	end
+end
+
+Gspot.unfocus = function(this)
+	this.focus = nil
+	if this.orepeat then love.keyboard.setKeyRepeat(this.orepeat.delay, this.orepeat.interval) end
+end
+
+local pos = {
 	load = function(this, Gspot, t)
 		assert(type(t) == 'table' or not t, 'invalid pos constructor argument : must be of type table or nil')
 		t = t or {}
@@ -300,7 +313,7 @@ Gspot.pos = {
 		type = function(this) return 'Gspot.pos' end,
 	},
 }
-setmetatable(Gspot.pos, {__call = Gspot.pos.load})
+Gspot.pos = setmetatable(pos, {__call = pos.load})
 
 Gspot.util = {
 	setshape = function(this, shape)
@@ -687,10 +700,10 @@ Gspot.checkbox = {
 setmetatable(Gspot.checkbox, {__index = Gspot.util, __call = Gspot.checkbox.load})
 
 Gspot.input = {
-	load = function(this, Gspot, label, pos, parent)
+	load = function(this, Gspot, label, pos, parent, value)
 		local element = Gspot:element('input', label, pos, parent)
-		element.value = ''
-		element.cursor = 0
+		element.value = (value and tostring(value)) or ''
+		element.cursor = element.value:len()
 		element.cursorlife = 0
 		element.keyrepeat = 200
 		element.keydelay = 500
@@ -747,6 +760,10 @@ Gspot.input = {
 		elseif code >= 32 and code < 127 then
 			this.value = this.value:sub(1, this.cursor)..string.char(code)..this.value:sub(this.cursor + 1)
 			this.cursor = this.cursor + 1
+		elseif key == 'tab' and this.next and this.next.elementtype then
+			this.next:focus()
+		elseif key == 'escape' then
+			this.Gspot:unfocus()
 		end
 		-- /fragments
 	end,
@@ -757,28 +774,55 @@ Gspot.scroll = {
 	load = function(this, Gspot, label, pos, parent, values)
 		local element = Gspot:element('scroll', label, pos, parent)
 		element.values = Gspot:scrollvalues(values)
-		element.wheelup = function(this) this.values.current = math.max(this.values.current - this.values.step, this.values.min) end
-		element.wheeldown = function(this) this.values.current = math.min(this.values.current + this.values.step, this.values.max) end
 		return Gspot:add(element)
 	end,
 	update = function(this, dt)
-		if this.withinrect({x = love.mouse.getX(), y = love.mouse.getY()}, this:getpos()) then this.Gspot.mousein = this end
+		local mouse = {}
+		mouse.x, mouse.y = this.Gspot:getmouse()
+		if this.withinrect({x = mouse.x, y = mouse.y}, this:getpos()) then this.Gspot.mousein = this end
+	end,
+	step = function(this, step)
+		if step > 0 then this.values.current = math.max(this.values.current - this.values.step, this.values.min)
+		elseif step < 0 then this.values.current = math.min(this.values.current + this.values.step, this.values.max)
+		end
 	end,
 	drag = function(this, x, y)
 		local pos = this:getpos()
 		this.values.current = this.values.min + ((this.values.max - this.values.min) * ((this.values.axis == 'vertical' and ((math.min(math.max(pos.y, y), (pos.y + pos.h)) - pos.y) / pos.h)) or ((math.min(math.max(pos.x, x), (pos.x + pos.w)) - pos.x) / pos.w)))
 	end,
+	wheelup = function(this)
+		if this.values.axis == 'horizontal' then this:step(-1) else this:step(1) end
+	end,
+	wheeldown = function(this)
+		if this.values.axis == 'horizontal' then this:step(1) else this:step(-1) end
+	end,
+	keypress = function(this, key, code)
+		if key == 'left' and this.values.axis == 'horizontal' then
+			this:step(1)
+		elseif key == 'right' and this.values.axis == 'horizontal' then
+			this:step(-1)
+		elseif key == 'up' and this.values.axis == 'vertical' then
+			this:step(-1)
+		elseif key == 'down' and this.values.axis == 'vertical' then
+			this:step(1)
+		elseif key == 'tab' and this.next and this.next.elementtype then
+			this.next:focus()
+		elseif key == 'escape' then
+			this.Gspot:unfocus()
+		end
+	end,
+	done = function(this) this.Gspot:unfocus() end,
 	draw = function(this, pos)
-		if this == this.Gspot.mousein or this == this.Gspot.drag then love.graphics.setColor(this.style.default)
+		if this == this.Gspot.mousein or this == this.Gspot.drag or this == this.Gspot.focus then love.graphics.setColor(this.style.default)
 		else love.graphics.setColor(this.style.bg) end
 		this:rect(pos)
-		if this == this.Gspot.mousein or this == this.Gspot.drag then love.graphics.setColor(this.style.fg)
+		if this == this.Gspot.mousein or this == this.Gspot.drag or this == this.Gspot.focus then love.graphics.setColor(this.style.fg)
 		else love.graphics.setColor(this.style.hilite) end
 		handlepos = this.Gspot:pos({x = (this.values.axis == 'horizontal' and math.min(pos.x + (pos.w - this.style.unit), math.max(pos.x, pos.x + (pos.w * (this.values.current / (this.values.max - this.values.min))) - (this.style.unit / 2)))) or pos.x, y = (this.values.axis == 'vertical' and math.min(pos.y + (pos.h - this.style.unit), math.max(pos.y, pos.y + (pos.h * (this.values.current / (this.values.max - this.values.min))) - (this.style.unit / 2)))) or pos.y, w = this.style.unit, h = this.style.unit, r = pos.r})
 		this:drawshape(handlepos)
 		if this.label then
 			love.graphics.setColor(this.style.fg)
-			love.graphics.print(this.label, pos.x + ((pos.w - this.style.font:getWidth(this.label)) / 2), (pos.y + pos.h) + ((this.style.unit - this.style.font:getHeight('dp')) / 2))
+			love.graphics.print(this.label, (this.values.axis == 'horizontal' and pos.x - ((this.style.unit / 2) + this.style.font:getWidth(this.label))) or pos.x + ((pos.w - this.style.font:getWidth(this.label)) / 2), (this.values.axis == 'vertical' and (pos.y + pos.h) + ((this.style.unit - this.style.font:getHeight('dp')) / 2)) or pos.y + ((this.style.unit - this.style.font:getHeight('dp')) / 2))
 		end
 	end,
 }
@@ -841,7 +885,7 @@ Gspot.feedback = {
 		local element = Gspot:add(Gspot:element('feedback', label, pos, parent))
 		element.style.fg = {255, 255, 255, 255}
 		element.alpha = 255
-		element.life = 3
+		element.life = 5
 		element.autopos = autopos
 		return element
 	end,
