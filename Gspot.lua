@@ -834,8 +834,8 @@ Gspot.scrollgroup = {
 		local element = Gspot:element('scrollgroup', label, pos, parent)
 		element.maxh = 0
 		element = Gspot:add(element)
-		if axis ~= 'horizontal' then this.scrollv = Gspot:scroll(nil, {x = element.pos.w, y = 0, w = element.style.unit, h = element.pos.h}, element, {0, 0, 0, element.style.unit, 'vertical'}) end
-		if axis ~= 'vertical' then this.scrollh = Gspot:scroll(nil, {x = 0, y = element.pos.h, w = element.pos.w, h = element.style.unit}, element, {0, 0, 0, element.style.unit, 'horizontal'}) end
+		if axis ~= 'horizontal' then element.scrollv = Gspot:scroll(nil, {x = element.pos.w, y = 0, w = element.style.unit, h = element.pos.h}, element, {0, 0, 0, element.style.unit, 'vertical'}) end
+		if axis ~= 'vertical' then element.scrollh = Gspot:scroll(nil, {x = 0, y = element.pos.h, w = element.pos.w, h = element.style.unit}, element, {0, 0, 0, element.style.unit, 'horizontal'}) end
 		return element
 	end,
 	draw = function(this, pos)
